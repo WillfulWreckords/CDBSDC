@@ -26,8 +26,6 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
-import com.wwrkds.license.LicenseManager;
-
 public class CDBabySalesDataCrawlerUI {
 
 	static class DirListener implements ActionListener {
@@ -91,7 +89,7 @@ public class CDBabySalesDataCrawlerUI {
 			ftpUserField, ftpPassField, ftpDirField, ftpServerField,
 			ftpPortField;
 
-	static String version = "v1.0.1";
+	static String version = "v1.0.3";
 
 	static void getGUIFieldData() {
 
@@ -219,10 +217,10 @@ public class CDBabySalesDataCrawlerUI {
 	public static void main(String[] args) {
 
 		// Check License...
-		Class<?> cls = com.wwrkds.CDBabySalesDataCrawler.class;
-		LicenseManager manager = new LicenseManager(cls, "CDBSDC-ZIP",
-				"http://willfulwreckords.com/Store/",
-				"http://willfulwreckords.com/Software/license/");
+		// Class<?> cls = com.wwrkds.CDBabySalesDataCrawler.class;
+		// LicenseManager manager = new LicenseManager(cls, "CDBSDC-ZIP",
+		// "http://willfulwreckords.com/Store/",
+		// "http://willfulwreckords.com/Software/license/");
 
 		boolean nogui = false;
 		for (String arg : args) {

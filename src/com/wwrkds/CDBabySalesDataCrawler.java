@@ -450,12 +450,6 @@ public class CDBabySalesDataCrawler extends Thread {
 				} else if (this.drivername.trim().toLowerCase()
 						.contentEquals("htmlunit")) {
 					driver = new org.openqa.selenium.htmlunit.HtmlUnitDriver();
-				} else if (this.drivername.trim().toLowerCase()
-						.contentEquals("iphone")) {
-					driver = new org.openqa.selenium.iphone.IPhoneDriver();
-				} else if (this.drivername.trim().toLowerCase()
-						.contentEquals("android")) {
-					driver = new org.openqa.selenium.android.AndroidDriver();
 				}
 			} catch (Exception e) {
 
@@ -463,6 +457,10 @@ public class CDBabySalesDataCrawler extends Thread {
 
 			if (driver != null) {
 				driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+				driver.manage().timeouts()
+						.pageLoadTimeout(10, TimeUnit.SECONDS);
+				driver.manage().timeouts()
+						.setScriptTimeout(10, TimeUnit.SECONDS);
 
 				try {
 					driver.manage().deleteAllCookies();
@@ -473,20 +471,34 @@ public class CDBabySalesDataCrawler extends Thread {
 					WebElement query;
 
 					// Enter username
-					query = driver.findElement(By
-							.id("ctl00_centerColumn_txtClientUsername"));
+					String input_id = null;
+					int version = 2;
+					if (version == 1) {
+						input_id = "ctl00_centerColumn_txtClientUsername";
+					} else if (version == 2) {
+						input_id = "ctl00_MainContent_txtClientUsername";
+					}
+					query = driver.findElement(By.id(input_id));
 					query.clear();
 					query.sendKeys(this.username);
 
 					// Enter password
-					query = driver.findElement(By
-							.id("ctl00_centerColumn_txtClientPassword"));
+					if (version == 1) {
+						input_id = "ctl00_centerColumn_txtClientPassword";
+					} else if (version == 2) {
+						input_id = "ctl00_MainContent_txtClientPassword";
+					}
+					query = driver.findElement(By.id(input_id));
 					query.clear();
 					query.sendKeys(this.password);
 
 					// Click login button
-					query = driver.findElement(By
-							.id("ctl00_centerColumn_btnLoginArtist"));
+					if (version == 1) {
+						input_id = "ctl00_centerColumn_btnLoginArtist";
+					} else if (version == 2) {
+						input_id = "ctl00_MainContent_btnLoginArtist";
+					}
+					query = driver.findElement(By.id(input_id));
 					query.click();
 
 					try {
@@ -530,7 +542,7 @@ public class CDBabySalesDataCrawler extends Thread {
 								// Get the project name...
 								albumTitle = text.substring(0,
 										text.indexOf("$") - 1).trim();
-								// Repace invalid file name elements
+								// Replace invalid file name elements
 								albumTitle = albumTitle
 										.replaceAll(
 												"[\\\\\\/\\:\\,\\!\\@\\#\\$\\%\\^&\\+\\*\\(\\)]",
@@ -560,7 +572,7 @@ public class CDBabySalesDataCrawler extends Thread {
 								for (WebElement option : allOptions) {
 									// System.out.println(String.format("Value is: %s",
 									// option.getAttribute("value")));
-									if (option.getText().contains("100")) {
+									if (option.getText().contains("500")) {
 										option.click();
 									}
 								}
@@ -574,6 +586,22 @@ public class CDBabySalesDataCrawler extends Thread {
 								// TODO Auto-generated catch block
 								e2.printStackTrace();
 							}
+
+							String revenueType = "";
+							try {
+								revenueType = " "
+										+ driver.findElement(
+												By.cssSelector("div.section-title-953 h2"))
+												.getText();
+								revenueType = revenueType.replace("(", "")
+										.replace(")", "");
+
+							} catch (Exception ex4) {
+
+							}
+							revenueType = revenueType.trim();
+							revenueType = revenueType.replace(" ", "-");
+
 							List<String> data = new ArrayList<String>();
 							Integer old = 0;
 
@@ -597,63 +625,82 @@ public class CDBabySalesDataCrawler extends Thread {
 									e1.printStackTrace();
 								}
 
-								Integer current = 1;
+								String src = driver.getPageSource();
+
+								Integer current = old + 1;
 								try {
-									current = Integer
-											.parseInt(driver
-													.findElement(
-															By.cssSelector("div.page-numbers a.active"))
-													.getText());
+									List<WebElement> wels = driver
+											.findElements(By
+													.cssSelector("div.page-numbers a"));
+									if (!wels.isEmpty()
+											&& current > wels.size()) {
+										break;
+									}
 								} catch (Exception ex1) {
 
-								}
-								if (old == current) {
-									break;
 								}
 
 								System.out.println(">>\t\tpage # " + current);
 
-								// Get the table selectors
-								List<WebElement> datarows = driver
-										.findElements(By
-												.cssSelector("table.data-table tbody tr td"));
-								List<String> tdtext = new ArrayList<String>();
+								try {
+									// Get the table selectors
+									List<WebElement> datarows = driver
+											.findElements(By
+													.cssSelector("table.data-table tbody tr td"));
+									List<String> tdtext = new ArrayList<String>();
 
-								for (WebElement datarow : datarows) {
-									tdtext.add(datarow.getText().replace(", ",
-											""));
-								}
-
-								String row = "";
-								int k = 0;
-
-								int N = headers.size();
-								for (String str : tdtext) {
-
-									// Make sure we strip any internal commas
-									str = str.replace(",", "");
-
-									row += str + " ";
-									k++;
-									if (k < N) {
-										row += ", ";
-									} else {
-										// System.out.println(row);
-										data.add(row);
-										row = "";
-										k = 0;
+									for (WebElement datarow : datarows) {
+										tdtext.add(datarow.getText().replace(
+												", ", ""));
 									}
+
+									String row = "";
+									int k = 0;
+
+									int N = headers.size();
+									for (String str : tdtext) {
+
+										// Make sure we strip any internal
+										// commas
+										str = str.replace(",", "");
+
+										row += str + " ";
+										k++;
+										if (k < N) {
+											row += ", ";
+										} else {
+											// System.out.println(row);
+											data.add(row);
+											row = "";
+											k = 0;
+										}
+									}
+								} catch (Exception ex) {
+									ex.printStackTrace();
 								}
 
 								try {
-									old = Integer
-											.parseInt(driver
-													.findElement(
-															By.cssSelector("div.page-numbers a.active"))
-													.getText());
+									// WebElement ael = driver
+									// .findElement(By
+									// .cssSelector("div.page-numbers a.active"));
+									// old = Integer.parseInt(ael.getText());
+									old++;
+
 									WebElement we = driver.findElement(By
-											.partialLinkText("Next"));
+											.cssSelector("a.next-link"));
+									// if (we != null) {
 									we.click();
+									// } else {
+									// List<WebElement> wel = driver
+									// .findElements(By
+									// .cssSelector("div.page-numbers a"));
+									// for (WebElement e : wel) {
+									// if (old < Integer.parseInt(e
+									// .getText())) {
+									// e.click();
+									// }
+									// }
+									// }
 
 								} catch (Exception e) {
 									break;
@@ -661,21 +708,6 @@ public class CDBabySalesDataCrawler extends Thread {
 							}
 
 							// System.out.println("");
-
-							String revenueType = "";
-							try {
-								revenueType = " "
-										+ driver.findElement(
-												By.cssSelector("div.section-title-953 h2"))
-												.getText();
-								revenueType = revenueType.replace("(", "")
-										.replace(")", "");
-
-							} catch (Exception ex4) {
-
-							}
-							revenueType = revenueType.trim();
-							revenueType = revenueType.replace(" ", "-");
 
 							if (this.doXml) {
 								// Write to XML file ...
@@ -842,10 +874,15 @@ public class CDBabySalesDataCrawler extends Thread {
 								.println("Uploaded " + cd + "/" + f.getName());
 					} catch (FileNotFoundException e) {
 						// TODO Auto-generated catch block
+						System.out
+								.println("Error (File Not Found Exception) for "
+										+ cd + "/" + f.getName());
 						e.printStackTrace();
 
 					} catch (IOException e) {
 						// TODO Auto-generated catch block
+						System.out.println("Error (IO Exception) for " + cd
+								+ "/" + f.getName());
 						e.printStackTrace();
 					}
 				}
@@ -863,6 +900,12 @@ public class CDBabySalesDataCrawler extends Thread {
 			IOException {
 
 		FTPClient ftp = new FTPClient();
+
+		// Per:
+		// http://malsserver.blogspot.com/2009/08/ftpconnectionclosedexception-connection.html
+		// http://getfundas746.blogspot.in/2012/12/orgapachecommonsnetftpftpconnectionclos.html
+		ftp.enterLocalPassiveMode();
+
 		FTPClientConfig config = new FTPClientConfig();
 		// change required options
 		ftp.configure(config);
