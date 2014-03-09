@@ -921,7 +921,10 @@ public class CDBabySalesDataCrawler extends Thread {
 									elements = doc
 											.select("table.data-table tbody tr");
 									for (Element rowel : elements) {
-
+										if (rowel.text().matches(
+												"(?is).*PAGE TOTAL.*")) {
+											continue;
+										}
 										Map<String, String> row = new HashMap<String, String>();
 										row.put("albumTitle", albumTitle);
 										row.put("revenueType", revenueType);
