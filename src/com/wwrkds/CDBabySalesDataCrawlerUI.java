@@ -7,6 +7,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.prefs.Preferences;
 
 import javax.swing.BoxLayout;
@@ -78,8 +80,9 @@ public class CDBabySalesDataCrawlerUI {
 	static boolean doauto = false;
 
 	private static boolean docsv = false, doxml = false, doxlsx = false,
-			dohtml = true, doftp = false;
-	static JCheckBox docsvBox, dohtmlBox, doxlsxBox, doxmlBox, doftpBox;
+			dohtml = true, doftp = false, orgByDate = true;
+	static JCheckBox docsvBox, dohtmlBox, doxlsxBox, doxmlBox, doftpBox,
+			orgByDateBox;
 	static JRadioButton firefoxButton, ieButton, chromeButton, safariButton;
 	static JFrame frame;
 	static ButtonGroup group;
@@ -89,7 +92,7 @@ public class CDBabySalesDataCrawlerUI {
 			ftpUserField, ftpPassField, ftpDirField, ftpServerField,
 			ftpPortField;
 
-	static String version = "v1.0.3";
+	static String version = "v1.0.4";
 
 	static void getGUIFieldData() {
 
@@ -121,6 +124,8 @@ public class CDBabySalesDataCrawlerUI {
 		CDBabySalesDataCrawlerUI.docsv = CDBabySalesDataCrawlerUI.docsvBox
 				.isSelected();
 		CDBabySalesDataCrawlerUI.doftp = CDBabySalesDataCrawlerUI.doftpBox
+				.isSelected();
+		CDBabySalesDataCrawlerUI.orgByDate = CDBabySalesDataCrawlerUI.orgByDateBox
 				.isSelected();
 
 		if (CDBabySalesDataCrawlerUI.firefoxButton.isSelected()) {
@@ -162,6 +167,8 @@ public class CDBabySalesDataCrawlerUI {
 				"doxlsx", "false"));
 		CDBabySalesDataCrawlerUI.doftp = Boolean.parseBoolean(userPrefs.get(
 				"doftp", "false"));
+		CDBabySalesDataCrawlerUI.orgByDate = Boolean.parseBoolean(userPrefs
+				.get("orgByDate", "true"));
 		CDBabySalesDataCrawlerUI.browser = userPrefs.get("browser", "firefox");
 
 	}
@@ -173,6 +180,14 @@ public class CDBabySalesDataCrawlerUI {
 
 		if (!CDBabySalesDataCrawlerUI.directory.endsWith(File.separator)) {
 			CDBabySalesDataCrawlerUI.directory += File.separator;
+		}
+
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MMM-dd_HH-mm-ss");
+		Calendar c = Calendar.getInstance();
+		String str = sdf.format(c.getTime());
+		String directory = CDBabySalesDataCrawlerUI.directory;
+		if (CDBabySalesDataCrawlerUI.orgByDate) {
+			directory += str + File.separator;
 		}
 
 		if (CDBabySalesDataCrawlerUI.username != null
@@ -189,9 +204,8 @@ public class CDBabySalesDataCrawlerUI {
 			int to = Integer.parseInt(CDBabySalesDataCrawlerUI.timeout) * 1000;
 			CDBabySalesDataCrawler crawler = new CDBabySalesDataCrawler(
 					CDBabySalesDataCrawlerUI.username,
-					CDBabySalesDataCrawlerUI.password,
-					CDBabySalesDataCrawlerUI.directory, "CD Baby Sales Data",
-					to);
+					CDBabySalesDataCrawlerUI.password, directory,
+					"CD Baby Sales Data", to);
 			crawler.setDocsv(CDBabySalesDataCrawlerUI.docsv);
 			crawler.setDoxml(CDBabySalesDataCrawlerUI.doxml);
 			crawler.setDohtml(CDBabySalesDataCrawlerUI.dohtml);
@@ -372,6 +386,11 @@ public class CDBabySalesDataCrawlerUI {
 		CDBabySalesDataCrawlerUI.dirField.setEditable(false);
 		CDBabySalesDataCrawlerUI.dirField
 				.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+		CDBabySalesDataCrawlerUI.orgByDateBox = new JCheckBox();
+		CDBabySalesDataCrawlerUI.orgByDateBox.setVisible(true);
+		CDBabySalesDataCrawlerUI.orgByDateBox
+				.setAlignmentX(Component.CENTER_ALIGNMENT);
 		// CDBabySalesDataCrawlerUI.dirField.setText(userPrefs.get("directory",
 		// System.getProperty("user.home") + "/Documents/CDBSDC/"));
 
@@ -484,6 +503,11 @@ public class CDBabySalesDataCrawlerUI {
 		of.add(CDBabySalesDataCrawlerUI.dirField);
 		CDBabySalesDataCrawlerUI.frame.getContentPane().add(of);
 
+		JPanel of1 = new JPanel();
+		of1.add(new JLabel("Org by date: "));
+		of1.add(CDBabySalesDataCrawlerUI.orgByDateBox);
+		CDBabySalesDataCrawlerUI.frame.getContentPane().add(of1);
+
 		tf = new JPanel();
 		tf.add(new JLabel("Click Delay (s): "));
 		tf.add(CDBabySalesDataCrawlerUI.timeoutField);
@@ -587,6 +611,8 @@ public class CDBabySalesDataCrawlerUI {
 				.setSelected(CDBabySalesDataCrawlerUI.doxlsx);
 		CDBabySalesDataCrawlerUI.docsvBox
 				.setSelected(CDBabySalesDataCrawlerUI.docsv);
+		CDBabySalesDataCrawlerUI.orgByDateBox
+				.setSelected(CDBabySalesDataCrawlerUI.orgByDate);
 
 		CDBabySalesDataCrawlerUI.userField
 				.setText(CDBabySalesDataCrawlerUI.username);

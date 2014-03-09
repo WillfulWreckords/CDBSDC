@@ -9,8 +9,16 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
@@ -21,12 +29,14 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.firefox.FirefoxDriver;
-
-import com.wwrkds.license.LicenseManager;
 
 public class CDBabySalesDataCrawler extends Thread {
 
@@ -54,6 +64,43 @@ public class CDBabySalesDataCrawler extends Thread {
 				out.println(rowdata);
 			}
 			// workbook.write(out);
+			out.close();
+		} catch (FileNotFoundException e) {
+			// e.printStackTrace();
+		}
+	}
+
+	public static synchronized <U, T> void writeCSVRows(String filename,
+			Collection<Map<U, T>> rows) {
+		try {
+			File file = new File(filename);
+			file.getParentFile().mkdirs();
+			PrintStream out = new PrintStream(file);
+
+			Set<U> headers = new HashSet<U>();
+
+			// Collect header information
+			for (Map<U, T> map : rows) {
+				headers.addAll(map.keySet());
+			}
+
+			// Print header information
+			for (U header : headers) {
+				out.print(header.toString().replace(",", "") + ",\t");
+			}
+			out.println();
+
+			// Print rows
+			for (Map<U, T> map : rows) {
+				for (U header : headers) {
+					String str = map.get(header) + "";
+					if (map.get(header) == null) {
+						str = " ";
+					}
+					out.print(str.replace(",", "") + ",\t");
+				}
+				out.println();
+			}
 			out.close();
 		} catch (FileNotFoundException e) {
 			// e.printStackTrace();
@@ -99,6 +146,68 @@ public class CDBabySalesDataCrawler extends Thread {
 							+ s.trim() + "</td>");
 				}
 				out.println("      </tr>");
+			}
+			out.println("      </tbody>");
+			out.println("    </table>");
+			out.println("  </body>");
+			out.println("</html>");
+			// workbook.write(out);
+			out.close();
+		} catch (FileNotFoundException e) {
+			// e.printStackTrace();
+		}
+	}
+
+	public static synchronized <U, T> void writeHTMLRows(String filename,
+			Collection<Map<U, T>> rows) {
+		try {
+			File file = new File(filename);
+			file.getParentFile().mkdirs();
+
+			PrintStream out = new PrintStream(file);
+			out.println("<html>");
+			out.println("  <title>" + file.getName().replace(".html", "")
+					+ "</title>");
+			out.println("  <head>");
+			out.println("      <script src=\"http://willfulwreckords.com/Software/scripts/flot/excanvas.min.js\"></script>");
+			out.println("      <script src=\"http://code.jquery.com/jquery-1.10.1.min.js\"></script>");
+			out.println("      <script src=\"http://willfulwreckords.com/Software/scripts/flot/jquery.flot.min.js\"></script>");
+			out.println("      <script src=\"http://willfulwreckords.com/Software/scripts/sdc/sdc.js\"></script>");
+			out.println("      <link rel=\"stylesheet\" type=\"text/css\" href=\"http://willfulwreckords.com/Software/scripts/sdc/sdc.css\">");
+			out.println("  </head>");
+			out.println("  <body>");
+			out.println("    <table class='dataTable'>");
+
+			Set<U> headers = new HashSet<U>();
+
+			// Collect header information
+			for (Map<U, T> map : rows) {
+				headers.addAll(map.keySet());
+			}
+
+			// Print header information
+			out.println("      <thead><tr>");
+			for (U header : headers) {
+				// out.print(header.replace(",", "") + ",\t");
+				out.println("        <th>" + header + "</th>");
+			}
+			out.println("      </tr></thead>");
+
+			// Print rows
+			out.println("      <tbody>");
+			for (Map<U, T> map : rows) {
+				out.println("          <tr>");
+				for (U header : headers) {
+					String str = map.get(header) + "";
+					if (map.get(header) == null) {
+						str = " ";
+					}
+					// out.print(str.replace(",", "") + ",\t");
+					out.print("        <td class=\"" + header + "\">" + str
+							+ "</td>");
+				}
+				out.println("          </tr>");
+				out.println();
 			}
 			out.println("      </tbody>");
 			out.println("    </table>");
@@ -162,6 +271,74 @@ public class CDBabySalesDataCrawler extends Thread {
 		}
 	}
 
+	public static synchronized <U, T> void writeXLSXRows(String filename,
+			String title, Collection<Map<U, T>> rows) {
+		XSSFWorkbook workbook = new XSSFWorkbook();
+		if (title == null) {
+			title = "Data";
+		}
+		XSSFSheet sheet = workbook.createSheet(title);
+		int rownum = 0;
+
+		Set<U> headers = new HashSet<U>();
+
+		// Collect header information
+		for (Map<U, T> map : rows) {
+			headers.addAll(map.keySet());
+		}
+
+		// Print header information
+		Row row = sheet.createRow(rownum++);
+		int cellnum = 0;
+		for (U header : headers) {
+			Cell cell = row.createCell(cellnum++);
+
+			if (header.toString().contains("$")) {
+				cell.setCellValue(new Double(header.toString().replace("$", "")));
+				cell.setCellType(Cell.CELL_TYPE_NUMERIC);
+			} else {
+				cell.setCellValue(header.toString());
+			}
+
+			// out.print(header.replace(",", "") + ",\t");
+		}
+		// out.println();
+
+		// Print rows
+		for (Map<U, T> map : rows) {
+			row = sheet.createRow(rownum++);
+			cellnum = 0;
+			for (U header : headers) {
+				Cell cell = row.createCell(cellnum++);
+				String str = map.get(header) + "";
+				if (map.get(header) == null) {
+					str = " ";
+				}
+
+				if (str.contains("$")) {
+					cell.setCellValue(new Double(str.replace("$", "")));
+					cell.setCellType(Cell.CELL_TYPE_NUMERIC);
+				} else {
+					cell.setCellValue(str);
+				}
+				// out.print(str.replace(",", "") + ",\t");
+			}
+			// out.println();
+		}
+
+		try {
+			File file = new File(filename);
+			file.getParentFile().mkdirs();
+			FileOutputStream out = new FileOutputStream(file);
+			workbook.write(out);
+			out.close();
+		} catch (FileNotFoundException e) {
+			// e.printStackTrace();
+		} catch (IOException e) {
+			// e.printStackTrace();
+		}
+	}
+
 	public static synchronized void writeXML(String filename, List<String> rows) {
 		try {
 			File file = new File(filename);
@@ -192,6 +369,56 @@ public class CDBabySalesDataCrawler extends Thread {
 		}
 	}
 
+	public static synchronized <U, T> void writeXMLRows(String filename,
+			Collection<Map<U, T>> rows) {
+		try {
+			File file = new File(filename);
+			file.getParentFile().mkdirs();
+			PrintStream out = new PrintStream(file);
+			out.println("<xml>");
+			out.println("    <table class='dataTable'>");
+
+			Set<U> headers = new HashSet<U>();
+
+			// Collect header information
+			for (Map<U, T> map : rows) {
+				headers.addAll(map.keySet());
+			}
+
+			// Print header information
+			out.println("      <thead><tr>");
+			for (U header : headers) {
+				// out.print(header.replace(",", "") + ",\t");
+				out.println("        <th>" + header + "</th>");
+			}
+			out.println("      </tr></thead>");
+
+			// Print rows
+			out.println("      <tbody>");
+			for (Map<U, T> map : rows) {
+				out.println("          <tr>");
+				for (U header : headers) {
+					String str = map.get(header) + "";
+					if (map.get(header) == null) {
+						str = " ";
+					}
+					// out.print(str.replace(",", "") + ",\t");
+					out.print("        <td class=\"" + header + "\">" + str
+							+ "</td>");
+				}
+				out.println("          </tr>");
+				out.println();
+			}
+			out.println("      </tbody>");
+			out.println("    </table>");
+			out.println("</xml>");
+			// workbook.write(out);
+			out.close();
+		} catch (FileNotFoundException e) {
+			// e.printStackTrace();
+		}
+	}
+
 	private boolean doFtp = false, doXml = true, doXlsx = true, doHtml = true,
 			doCsv = true;
 	private final boolean dosql = false;
@@ -210,40 +437,38 @@ public class CDBabySalesDataCrawler extends Thread {
 	private String username = null;
 
 	public CDBabySalesDataCrawler() {
-
-		LicenseManager manager = new LicenseManager(
-				com.wwrkds.CDBabySalesDataCrawler.class, "CDBSDC-ZIP",
-				"http://willfulwreckords.com/Store/",
-				"http://willfulwreckords.com/Software/license/");
+		// LicenseManager manager = new LicenseManager(
+		// com.wwrkds.CDBabySalesDataCrawler.class, "CDBSDC-ZIP",
+		// "http://willfulwreckords.com/Store/",
+		// "http://willfulwreckords.com/Software/license/");
 
 	}
 
 	public CDBabySalesDataCrawler(String u, String p, String d, String s) {
+		// LicenseManager manager = new LicenseManager(
+		// com.wwrkds.CDBabySalesDataCrawler.class, "CDBSDC-ZIP",
+		// "http://willfulwreckords.com/Store/",
+		// "http://willfulwreckords.com/Software/license/");
 
-		LicenseManager manager = new LicenseManager(
-				com.wwrkds.CDBabySalesDataCrawler.class, "CDBSDC-ZIP",
-				"http://willfulwreckords.com/Store/",
-				"http://willfulwreckords.com/Software/license/");
-
-		this.username = u;
-		this.password = p;
-		this.outputDirectory = d;
-		this.sheetTitle = s;
+		this.setUsername(u);
+		this.setPassword(p);
+		this.setOutputDirectory(d);
+		this.setSheetTitle(s);
 	}
 
 	public CDBabySalesDataCrawler(String u, String p, String d, String s,
 			int timeout) {
 
-		LicenseManager manager = new LicenseManager(
-				com.wwrkds.CDBabySalesDataCrawler.class, "CDBSDC-ZIP",
-				"http://willfulwreckords.com/Store/",
-				"http://willfulwreckords.com/Software/license/");
+		// LicenseManager manager = new LicenseManager(
+		// com.wwrkds.CDBabySalesDataCrawler.class, "CDBSDC-ZIP",
+		// "http://willfulwreckords.com/Store/",
+		// "http://willfulwreckords.com/Software/license/");
 
-		this.username = u;
-		this.password = p;
-		this.outputDirectory = d;
-		this.sheetTitle = s;
-		this.timedelay = timeout;
+		this.setUsername(u);
+		this.setPassword(p);
+		this.setOutputDirectory(d);
+		this.setSheetTitle(s);
+		this.setTimedelay(timeout);
 	}
 
 	private boolean doCrawl() {
@@ -252,7 +477,7 @@ public class CDBabySalesDataCrawler extends Thread {
 	}
 
 	public String getDirPrefix() {
-		return this.outputDirectory;
+		return this.getOutputDirectory();
 	}
 
 	public String getDrivername() {
@@ -322,6 +547,17 @@ public class CDBabySalesDataCrawler extends Thread {
 	public boolean isDoXml() {
 		return this.doXml;
 	}
+
+	// public org.w3c.dom.Document loadXMLFromString(String xml) throws
+	// Exception {
+	// DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+
+	// factory.setNamespaceAware(true);
+	// DocumentBuilder builder = factory.newDocumentBuilder();
+
+	// builder.parse(new InputSource(new StringReader(xml)));
+	// return builder.parse(new ByteArrayInputStream(xml.getBytes()));
+	// }
 
 	public void parseArgs(String[] args) {
 
@@ -501,31 +737,29 @@ public class CDBabySalesDataCrawler extends Thread {
 					query = driver.findElement(By.id(input_id));
 					query.click();
 
-					try {
-						Thread.sleep(this.timedelay);
-					} catch (InterruptedException e3) {
-						// TODO Auto-generated catch block
-						e3.printStackTrace();
-					}
+					// try {
+					// Thread.sleep(this.timedelay);
+					// } catch (InterruptedException e3) {
+					// // TODO Auto-generated catch block
+					// e3.printStackTrace();
+					// }
 
 					query = driver.findElement(By
 							.partialLinkText("Accounting overview"));
 					query.click();
 
-					try {
-						Thread.sleep(this.timedelay);
-					} catch (InterruptedException e2) {
-						// TODO Auto-generated catch block
-						e2.printStackTrace();
-					}
+					// try {
+					// Thread.sleep(this.timedelay);
+					// } catch (InterruptedException e2) {
+					// // TODO Auto-generated catch block
+					// e2.printStackTrace();
+					// }
 
 					ArrayList<Integer> visited = new ArrayList<Integer>();
+					List<Map<String, String>> completeData = new ArrayList<Map<String, String>>();
 					while (true) {
 
 						String albumTitle = "";
-						// File file = new File(s+".csv");
-						// PrintStream out= new PrintStream(file);
-						// System.setOut(out);
 
 						List<WebElement> dataTables = driver
 								.findElements(By
@@ -555,16 +789,14 @@ public class CDBabySalesDataCrawler extends Thread {
 							}
 							vi++;
 						}
+
 						if (q != null) {
 							WebElement link = q.findElement(By
 									.partialLinkText("view sales"));
 							link.click();
 
-							// driver.findElement(By.cssSelector("select")).click();
-							// driver.findElement(By.cssSelector("option[value=\"500\"]")).click();
-
 							try {
-								Thread.sleep(this.timedelay);
+								// Thread.sleep(this.timedelay);
 								WebElement select = driver.findElement(By
 										.tagName("select"));
 								List<WebElement> allOptions = select
@@ -580,14 +812,14 @@ public class CDBabySalesDataCrawler extends Thread {
 
 							}
 
-							try {
-								Thread.sleep(this.timedelay);
-							} catch (InterruptedException e2) {
-								// TODO Auto-generated catch block
-								e2.printStackTrace();
-							}
+							// try {
+							// Thread.sleep(this.timedelay);
+							// } catch (InterruptedException e2) {
+							// // TODO Auto-generated catch block
+							// e2.printStackTrace();
+							// }
 
-							String revenueType = "";
+							String revenueType = "UNKNOWN";
 							try {
 								revenueType = " "
 										+ driver.findElement(
@@ -602,216 +834,208 @@ public class CDBabySalesDataCrawler extends Thread {
 							revenueType = revenueType.trim();
 							revenueType = revenueType.replace(" ", "-");
 
-							List<String> data = new ArrayList<String>();
-							Integer old = 0;
-
 							System.out.print(">>\tCollecting table data\n");
 							System.out.flush();
 
-							List<String> headers = new ArrayList<String>();
-							List<WebElement> welist = driver.findElements(By
-									.cssSelector("table.data-table th"));
-							for (WebElement we : welist) {
-								headers.add(we.getText());
-							}
-							data.add(headers.toString().replace("[", "")
-									.replace("]", ""));
-
+							Set<String> seen = new HashSet<String>();
 							while (true) {
-								try {
-									Thread.sleep(this.timedelay);
-								} catch (InterruptedException e1) {
-									// TODO Auto-generated catch block
-									e1.printStackTrace();
-								}
 
+								// try {
+								// Thread.sleep(this.timedelay * 2);
+								// } catch (InterruptedException e1) {
+								// // TODO Auto-generated catch block
+								// e1.printStackTrace();
+								// }
+
+								// Store the raw page source
 								String src = driver.getPageSource();
 
-								Integer current = old + 1;
-								try {
-									List<WebElement> wels = driver
-											.findElements(By
-													.cssSelector("div.page-numbers a"));
-									if (!wels.isEmpty()
-											&& current > wels.size()) {
-										break;
-									}
-								} catch (Exception ex1) {
-
+								Pattern p = Pattern
+										.compile("(?is)<table class=\"data-table.*?</table>");
+								Matcher m = p.matcher(src);
+								while (m.find()) {
+									src = m.group();
 								}
 
-								System.out.println(">>\t\tpage # " + current);
+								System.out
+										.println("\t\tGetting page source (table hashcode= "
+												+ src.hashCode() + ")");
+
+								seen.add(src);
 
 								try {
-									// Get the table selectors
-									List<WebElement> datarows = driver
-											.findElements(By
-													.cssSelector("table.data-table tbody tr td"));
-									List<String> tdtext = new ArrayList<String>();
 
-									for (WebElement datarow : datarows) {
-										tdtext.add(datarow.getText().replace(
-												", ", ""));
+									WebElement we = driver.findElement(By
+											.cssSelector("a.next-link"));
+									we.click();
+									try {
+										Thread.sleep(this.timedelay);
+									} catch (InterruptedException e1) {
+										// TODO Auto-generated catch block
+										e1.printStackTrace();
 									}
+								} catch (Exception e) {
+									// e.printStackTrace();
+									break;
+								}
+							}
 
-									String row = "";
-									int k = 0;
+							List<Map<String, String>> data = new ArrayList<Map<String, String>>();
 
-									int N = headers.size();
-									for (String str : tdtext) {
+							int current = 0;
+							for (String src : seen) {
+								try {
+									current++;
+									File rawsource = new File(
+											this.getOutputDirectory() + "raw"
+													+ File.separator
+													+ revenueType
+													+ File.separator
+													+ albumTitle
+													+ File.separator + "Page"
+													+ current + ".raw.html");
+									rawsource.getParentFile().mkdirs();
+									PrintStream ps = new PrintStream(rawsource);
+									ps.println(src);
+									ps.close();
 
-										// Make sure we strip any internal
-										// commas
-										str = str.replace(",", "");
+									System.out.println(">>\t\tpage # "
+											+ current);
 
-										row += str + " ";
-										k++;
-										if (k < N) {
-											row += ", ";
-										} else {
-											// System.out.println(row);
-											data.add(row);
-											row = "";
-											k = 0;
-										}
-									}
+									// org.w3c.dom.Document docw3c =
+									// loadXMLFromString(src);
 								} catch (Exception ex) {
 									ex.printStackTrace();
 								}
 
 								try {
-									// WebElement ael = driver
-									// .findElement(By
-									// .cssSelector("div.page-numbers a.active"));
-									// old = Integer.parseInt(ael.getText());
-									old++;
+									Document doc = Jsoup.parse(src);
 
-									WebElement we = driver.findElement(By
-											.cssSelector("a.next-link"));
-									// if (we != null) {
-									we.click();
-									// } else {
-									// List<WebElement> wel = driver
-									// .findElements(By
-									// .cssSelector("div.page-numbers a"));
-									// for (WebElement e : wel) {
-									// if (old < Integer.parseInt(e
-									// .getText())) {
-									// e.click();
-									// }
-									// }
-									// }
+									Elements elements = doc
+											.select("table.data-table thead tr th");
+									List<String> headers = new ArrayList<String>();
+									for (Element el : elements) {
+										headers.add(el.text().replace(", ", ""));
+									}
 
-								} catch (Exception e) {
-									break;
+									elements = doc
+											.select("table.data-table tbody tr");
+									for (Element rowel : elements) {
+
+										Map<String, String> row = new HashMap<String, String>();
+										row.put("albumTitle", albumTitle);
+										row.put("revenueType", revenueType);
+
+										int i = 0;
+										for (Element el : rowel.select("td")) {
+											String hdr = headers.get(i++);
+											String val = el.text().trim();
+											row.put(hdr, val);
+										}
+
+										if (row.get("revenueType").matches(
+												"DIGITAL-DISTRIBUTION-SALES")
+												&& row.get("TYPE") != null
+												&& row.get("TYPE").matches(
+														"(?i)Sync - Y")) {
+											// No-OP to manage their
+											// duplication of data...
+										} else {
+											completeData.add(row);
+											data.add(row);
+										}
+									}
+								} catch (Exception ex) {
+									ex.printStackTrace();
 								}
 							}
 
 							// System.out.println("");
-
-							if (this.doXml) {
-								// Write to XML file ...
-								System.out.print(">>Writing XML\n");
-								System.out.flush();
-								CDBabySalesDataCrawler.writeXML(
-										this.outputDirectory + albumTitle
-												+ File.separator + revenueType
-												+ ".xml", data);
-							}
-
-							if (this.dosql) {
-								// FINISH THIS SECTION....
-								String sql = "";
-
-								sql += "CREATE TABLE IF NOT EXISTS `cdb_project` ("
-										+ "cdb_project_id NOT NULL auto_increment"
-										+ "`project_artist` varchar(255), `project_title` varchar(255));\n";
-								sql += "INSERT INTO `cdb_project` (";
-
-								String tableName = "cdb_"
-										+ revenueType.replace("-", "_")
-												.toLowerCase();
-								String[] h = data.get(0).split(",");
-
-								// sql +=
-								// "DROP TABLE IF EXISTS '"+tableName+"';\n";
-								if (revenueType
-										.matches("DIGITAL.+DISTRIBUTION.+SALES")
-										&& h.length == 11) {
-
-									sql += "CREATE TABLE IF NOT EXISTS `"
-											+ tableName
-											+ "` ("
-											+ ""
-											+ tableName
-											+ "_id NOT NULL auto_increment"
-											+ "`report` varchar(32), `sales` varchar(32), `partner` varchar(255), "
-											+ "`artist` varchar(255), `album` varchar(255), `song` varchar(255), "
-											+ "`cover` varchar(255), `type` varchar(255), `qty` varchar(32), "
-											+ "`unit` varchar(255), `payable` varchar(255));\n";
-									for (int row = 1; row < data.size(); row++) {
-										String[] contents = data.get(row)
-												.split(",");
-										sql += "INSERT INTO `"
-												+ tableName
-												+ "` ("
-												+ "`report`, `sales`, `partner`, "
-												+ "`artist`, `album`, `song`, "
-												+ "`cover`, `type`, `qty`, "
-												+ "`unit`, `payable`) VALUES (";
-										int k = 0;
-										for (String c : contents) {
-											if (k++ > 0) {
-												sql += ", ";
-											}
-											sql += c;
-										}
-										sql += ");\n";
-									}
-								}
-							}
-							if (this.doHtml) {
-								// Write to HTML file ...
-								System.out.print(">>Writing HTML\n");
-								System.out.flush();
-								CDBabySalesDataCrawler.writeHTML(
-										this.outputDirectory + albumTitle
-												+ File.separator + revenueType
-												+ ".html", data);
-							}
-							if (this.doCsv) {
-								// Write to CSV file ...
-								System.out.print(">>Writing CSV\n");
-								System.out.flush();
-								CDBabySalesDataCrawler.writeCSV(
-										this.outputDirectory + albumTitle
-												+ File.separator + revenueType
-												+ ".csv", data);
-							}
-							if (this.doXlsx) {
-								// Write to XLSX file ...
-								System.out.print(">>Writing XLSX\n");
-								System.out.flush();
-								CDBabySalesDataCrawler.writeXLSX(
-										this.outputDirectory + albumTitle
-												+ File.separator + revenueType
-												+ ".xlsx", this.sheetTitle,
-										data);
-							}
+							this.writeOutputs(
+									this.getOutputDirectory() + albumTitle
+											+ File.separator + revenueType,
+									data);
 
 							// driver.get(arg0)
 							driver.findElement(By.partialLinkText("overview"))
 									.click();
-							try {
-								Thread.sleep(this.timedelay);
-							} catch (InterruptedException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
+							// try {
+							// Thread.sleep(this.timedelay);
+							// } catch (InterruptedException e) {
+							// // TODO Auto-generated catch block
+							// e.printStackTrace();
+							// }
 						} else {
 							break;
 						}
 					}
+
+					if (this.dosql) {
+						// FINISH THIS SECTION....
+					}
+
+					this.writeOutputs(this.getOutputDirectory() + "Complete",
+							completeData);
+
+					/*
+					 * //
+					 * ///////////////////////////////////////////////////////
+					 * ////// // Now lets compute some totals... //
+					 * /////////////
+					 * ////////////////////////////////////////////////
+					 * Map<String, Double> albums = new HashMap<String,
+					 * Double>(); Map<String, Double> partners = new
+					 * HashMap<String, Double>(); Map<String, Double> artists =
+					 * new HashMap<String, Double>(); Map<String, Double> songs
+					 * = new HashMap<String, Double>(); Map<String, Double>
+					 * dates = new HashMap<String, Double>();
+					 * 
+					 * for (Map<String, String> row : els.values()) { try {
+					 * String date = row.get("DATE"); if (date == null ||
+					 * date.isEmpty()) { date = row.get("SALES"); } // int year
+					 * = //
+					 * Integer.parseInt(date.substring(date.length()-4,date.
+					 * length())); double payable = Double.parseDouble(row
+					 * .get("PAYABLE")); String albumTitle =
+					 * row.get("albumTitle"); String partner =
+					 * row.get("PARTNER"); String song = row.get("SONG"); String
+					 * artist = row.get("ARTIST");
+					 * 
+					 * if (albums.containsKey(albumTitle)) {
+					 * albums.put(albumTitle, payable + albums.get(albumTitle));
+					 * } else { albums.put(albumTitle, payable); }
+					 * 
+					 * if (partners.containsKey(partner)) {
+					 * partners.put(partner, payable + partners.get(partner)); }
+					 * else { partners.put(partner, payable); }
+					 * 
+					 * if (artists.containsKey(artist)) { artists.put(artist,
+					 * payable + artists.get(partner)); } else {
+					 * artists.put(artist, payable); }
+					 * 
+					 * if (songs.containsKey(song)) { songs.put(song, payable +
+					 * songs.get(song)); } else { songs.put(song, payable); }
+					 * 
+					 * if (dates.containsKey(date)) { dates.put(date, payable +
+					 * songs.get(date)); } else { dates.put(date, payable); }
+					 * 
+					 * } catch (Exception oops) {
+					 * 
+					 * } }
+					 * 
+					 * 
+					 * this.writeOutputs( this.getOutputDirectory() +
+					 * "albumTotals", albums);
+					 * this.writeOutputs(this.getOutputDirectory() +
+					 * "artistTotals", artists);
+					 * this.writeOutputs(this.getOutputDirectory() +
+					 * "partnerTotals", partners);
+					 * this.writeOutputs(this.getOutputDirectory() +
+					 * "songTotals", songs);
+					 * this.writeOutputs(this.getOutputDirectory() +
+					 * "dateTotals", dates);
+					 */
+
 				} catch (Exception ex) {
 					System.out.println("Exception Caught ... parsing aborted.");
 				}
@@ -824,7 +1048,7 @@ public class CDBabySalesDataCrawler extends Thread {
 			}
 		}
 		if (this.isDoFtp()) {
-			System.out.print("Transmitting Results via FTP\n");
+			System.out.print("Attempting to Transmit Results via FTP\n");
 			try {
 				this.sendFTP();
 				System.out.println("FTP Transmission Complete\n");
@@ -966,7 +1190,7 @@ public class CDBabySalesDataCrawler extends Thread {
 			this.ftpDirectory += "/";
 		}
 
-		File dir = new File(this.outputDirectory);
+		File dir = new File(this.getOutputDirectory());
 		ftp.changeWorkingDirectory(this.ftpDirectory);
 
 		this.sendFiles(dir, ftp);
@@ -1059,6 +1283,90 @@ public class CDBabySalesDataCrawler extends Thread {
 
 	public void setUsername(String username) {
 		this.username = username;
+	}
+
+	public <U, T> void writeOutputs(String filename, Collection<Map<U, T>> rows) {
+
+		/*
+		 * if (this.doXml) { // Write to XML file ...
+		 * System.out.print(">>Writing XML\n"); System.out.flush();
+		 * CDBabySalesDataCrawler.writeXML( this.getOutputDirectory() +
+		 * albumTitle + File.separator + revenueType + ".xml", data); }
+		 * 
+		 * if (this.dosql) { // FINISH THIS SECTION.... String sql = "";
+		 * 
+		 * sql += "CREATE TABLE IF NOT EXISTS `cdb_project` (" +
+		 * "cdb_project_id NOT NULL auto_increment" +
+		 * "`project_artist` varchar(255), `project_title` varchar(255));\n";
+		 * sql += "INSERT INTO `cdb_project` (";
+		 * 
+		 * String tableName = "cdb_" + revenueType.replace("-", "_")
+		 * .toLowerCase(); String[] h = data.get(0).split(",");
+		 * 
+		 * // sql += // "DROP TABLE IF EXISTS '"+tableName+"';\n"; if
+		 * (revenueType .matches("DIGITAL.+DISTRIBUTION.+SALES") && h.length ==
+		 * 11) {
+		 * 
+		 * sql += "CREATE TABLE IF NOT EXISTS `" + tableName + "` (" + "" +
+		 * tableName + "_id NOT NULL auto_increment" +
+		 * "`report` varchar(32), `sales` varchar(32), `partner` varchar(255), "
+		 * +
+		 * "`artist` varchar(255), `album` varchar(255), `song` varchar(255), "
+		 * + "`cover` varchar(255), `type` varchar(255), `qty` varchar(32), " +
+		 * "`unit` varchar(255), `payable` varchar(255));\n"; for (int row = 1;
+		 * row < data.size(); row++) { String[] contents = data.get(row)
+		 * .split(","); sql += "INSERT INTO `" + tableName + "` (" +
+		 * "`report`, `sales`, `partner`, " + "`artist`, `album`, `song`, " +
+		 * "`cover`, `type`, `qty`, " + "`unit`, `payable`) VALUES ("; int k =
+		 * 0; for (String c : contents) { if (k++ > 0) { sql += ", "; } sql +=
+		 * c; } sql += ");\n"; } } }
+		 */
+
+		System.out.print(">>Writing outputs for "
+				+ new File(filename).getName() + "\n");
+		System.out.flush();
+
+		if (this.doXml) {
+			CDBabySalesDataCrawler.writeXMLRows(filename + ".xml", rows);
+		}
+
+		if (this.doHtml) {
+			CDBabySalesDataCrawler.writeHTMLRows(filename + ".html", rows);
+		}
+
+		if (this.doCsv) {
+			CDBabySalesDataCrawler.writeCSVRows(filename + ".csv", rows);
+		}
+
+		if (this.doXlsx) {
+			CDBabySalesDataCrawler.writeXLSXRows(filename + ".xlsx",
+					"Complete", rows);
+		}
+	}
+
+	public <U, T> void writeOutputs(String filename, Collection<U> x,
+			Collection<T> y) {
+		this.writeOutputs(filename, x.toArray(), y.toArray());
+	}
+
+	public <U, T> void writeOutputs(String filename, Map<U, T> map) {
+		ArrayList<U> keys = new ArrayList<U>();
+		ArrayList<T> values = new ArrayList<T>();
+		for (Entry<U, T> entry : map.entrySet()) {
+			keys.add(entry.getKey());
+			values.add(entry.getValue());
+		}
+		this.writeOutputs(filename, keys, values);
+	}
+
+	public <U, T> void writeOutputs(String filename, U[] x, T[] y) {
+		List<Map<U, T>> data = new ArrayList<Map<U, T>>();
+		for (int i = 0; i < x.length; i++) {
+			Map<U, T> map = new HashMap<U, T>();
+			map.put(x[i], y[i]);
+			data.add(map);
+		}
+		this.writeOutputs(filename, data);
 	}
 
 }
