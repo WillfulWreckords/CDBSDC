@@ -7,12 +7,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.net.SocketException;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -26,7 +28,9 @@ import org.apache.commons.net.ftp.FTPClientConfig;
 import org.apache.commons.net.ftp.FTPReply;
 import org.apache.log4j.varia.NullAppender;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFCreationHelper;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jsoup.Jsoup;
@@ -278,6 +282,7 @@ public class CDBabySalesDataCrawler extends Thread {
 			title = "Data";
 		}
 		XSSFSheet sheet = workbook.createSheet(title);
+		XSSFCreationHelper createHelper = workbook.getCreationHelper();
 		int rownum = 0;
 
 		Set<U> headers = new HashSet<U>();
@@ -318,6 +323,32 @@ public class CDBabySalesDataCrawler extends Thread {
 				if (str.contains("$")) {
 					cell.setCellValue(new Double(str.replace("$", "")));
 					cell.setCellType(Cell.CELL_TYPE_NUMERIC);
+				} else if (str.trim().matches("(\\d{1,2}/){2}\\d{4}")) {
+					CellStyle cellStyle = workbook.createCellStyle();
+					cellStyle.setDataFormat(createHelper.createDataFormat()
+							.getFormat("m/d/yyyy"));
+					try {
+						Date date = new java.text.SimpleDateFormat("MM/d/yyyy",
+								Locale.ENGLISH).parse(str);
+						cell.setCellValue(date);
+						cell.setCellStyle(cellStyle);
+					} catch (ParseException e) {
+						cell.setCellValue(str);
+					}
+
+				} else if (str.trim().matches("(\\d{1,2}/){1}\\d{4}")) {
+					CellStyle cellStyle = workbook.createCellStyle();
+					cellStyle.setDataFormat(createHelper.createDataFormat()
+							.getFormat("m/yyyy"));
+					try {
+						Date date = new java.text.SimpleDateFormat("MM/yyyy",
+								Locale.ENGLISH).parse(str);
+						cell.setCellValue(date);
+						cell.setCellStyle(cellStyle);
+					} catch (ParseException e) {
+						cell.setCellValue(str);
+					}
+
 				} else {
 					cell.setCellValue(str);
 				}
@@ -608,7 +639,7 @@ public class CDBabySalesDataCrawler extends Thread {
 		System.out
 				.print("*********************************************************************************************************************\n");
 		System.out.print("CD Baby Sales Data Crawler ("
-				+ CDBabySalesDataCrawlerUI.version + "):\n");
+				+ CDBabySalesDataCrawlerUI.getVersion() + "):\n");
 		System.out
 				.print("\tWritten by: Jonathan J. Lareau - Willful Wreckords, LLC\n\twww.willfulwreckords.com\n\n");
 		System.out
@@ -747,6 +778,20 @@ public class CDBabySalesDataCrawler extends Thread {
 					query = driver.findElement(By
 							.partialLinkText("Accounting overview"));
 					query.click();
+
+					String overviewsrc = driver.getPageSource();
+					try {
+						File rawovsource = new File(this.getOutputDirectory()
+								+ "raw" + File.separator + "Overview.raw.html");
+						rawovsource.getParentFile().mkdirs();
+						PrintStream ps = new PrintStream(rawovsource);
+						ps.println(overviewsrc);
+						ps.close();
+						// org.w3c.dom.Document docw3c =
+						// loadXMLFromString(src);
+					} catch (Exception ex) {
+						ex.printStackTrace();
+					}
 
 					// try {
 					// Thread.sleep(this.timedelay);
@@ -926,17 +971,74 @@ public class CDBabySalesDataCrawler extends Thread {
 											continue;
 										}
 										Map<String, String> row = new HashMap<String, String>();
-										row.put("albumTitle", albumTitle);
-										row.put("revenueType", revenueType);
 
+										// Add revenue type field
+										row.put("REVENUETYPE",
+												revenueType.toUpperCase());
+
+										// Default partner value
+										row.put("PARTNER", "CDBaby");
+
+										// Error checking and formatting of date
+										// data
 										int i = 0;
 										for (Element el : rowel.select("td")) {
-											String hdr = headers.get(i++);
-											String val = el.text().trim();
-											row.put(hdr, val);
+											try {
+												String hdr = headers.get(i++);
+
+												String val = el.text().trim();
+
+												if (hdr.toLowerCase().matches(
+														"sales")
+														|| hdr.toLowerCase()
+																.matches("date")
+														|| hdr.toLowerCase()
+																.matches(
+																		"report")) {
+													val = val.replace("Jan ",
+															"1/");
+													val = val.replace("Feb ",
+															"2/");
+													val = val.replace("Mar ",
+															"3/");
+													val = val.replace("Apr ",
+															"4/");
+													val = val.replace("May ",
+															"5/");
+													val = val.replace("Jun ",
+															"6/");
+													val = val.replace("Jul ",
+															"7/");
+													val = val.replace("Aug ",
+															"8/");
+													val = val.replace("Sep ",
+															"9/");
+													val = val.replace("Oct ",
+															"10/");
+													val = val.replace("Nov ",
+															"11/");
+													val = val.replace("Dec ",
+															"12/");
+													val = val
+															.replace(", ", "/");
+												}
+												row.put(hdr.toUpperCase(), val);
+											} catch (Exception ex2) {
+												ex2.printStackTrace();
+											}
 										}
 
-										if (row.get("revenueType").matches(
+										if (row.get("DATE") != null) {
+											row.put("SALEDATE", row.get("DATE"));
+										}
+										if (row.get("SALES") != null) {
+											String dstr = row.get("SALES")
+													.trim();
+											dstr = dstr.replace("/", "/1/");
+											row.put("SALEDATE", dstr);
+										}
+
+										if (row.get("REVENUETYPE").matches(
 												"DIGITAL-DISTRIBUTION-SALES")
 												&& row.get("TYPE") != null
 												&& row.get("TYPE").matches(
@@ -1051,80 +1153,53 @@ public class CDBabySalesDataCrawler extends Thread {
 			}
 		}
 		if (this.isDoFtp()) {
-			System.out.print("Attempting to Transmit Results via FTP\n");
-			try {
-				this.sendFTP();
-				System.out.println("FTP Transmission Complete\n");
-			} catch (NumberFormatException | IOException e) {
-				// TODO Auto-generated catch block
-				System.out.print("Error performing FTP transmission\n");
-				e.printStackTrace();
+			for (int i = 0; i < 3; i++) {
+				try {
+					System.out
+							.print("Attempting to Transmit Results via FTP\n");
+					this.sendFTP();
+					System.out.println("FTP Transmission Complete\n");
+					break;
+				} catch (Exception e) {
+					System.out.print("Error performing FTP transmission\n");
+					e.printStackTrace();
+				}
+			}
+		}
+		System.out.println("Crawling Completed.");
+	}
+
+	private void sendFiles(File dir, FTPClient ftp) throws Exception {
+		String cd = ftp.printWorkingDirectory();
+
+		for (File f : dir.listFiles()) {
+			if (f.getName().startsWith(".")) {
+				continue;
+			}
+			if (f.isDirectory()) {
+				boolean exists = ftp.changeWorkingDirectory(f.getName());
+				if (!exists) {
+					ftp.makeDirectory(f.getName());
+					exists = ftp.changeWorkingDirectory(f.getName());
+					if (!exists) {
+						throw new Exception("Couldn't make directory");
+					}
+				}
+
+				this.sendFiles(f, ftp);
+
+				ftp.changeToParentDirectory();
+
+			} else {
+				InputStream input = new FileInputStream(f);
+				ftp.storeFile(f.getName(), input);
+				input.close();
+				System.out.println("\tUploaded " + cd + "/" + f.getName());
 			}
 		}
 	}
 
-	private void sendFiles(File dir, FTPClient ftp) {
-		try {
-			String cd = ftp.printWorkingDirectory();
-
-			for (File f : dir.listFiles()) {
-				if (f.getName().startsWith(".")) {
-					continue;
-				}
-				if (f.isDirectory()) {
-					try {
-						boolean exists = ftp
-								.changeWorkingDirectory(f.getName());
-						if (!exists) {
-							ftp.makeDirectory(f.getName());
-							exists = ftp.changeWorkingDirectory(f.getName());
-							if (!exists) {
-								throw new Exception("Couldn't make directory");
-							}
-						}
-
-						this.sendFiles(f, ftp);
-
-						ftp.changeToParentDirectory();
-
-					} catch (Exception e) {
-
-					}
-
-				} else {
-					InputStream input = null;
-					try {
-						input = new FileInputStream(f);
-						ftp.storeFile(f.getName(), input);
-						input.close();
-						System.out
-								.println("Uploaded " + cd + "/" + f.getName());
-					} catch (FileNotFoundException e) {
-						// TODO Auto-generated catch block
-						System.out
-								.println("Error (File Not Found Exception) for "
-										+ cd + "/" + f.getName());
-						e.printStackTrace();
-
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						System.out.println("Error (IO Exception) for " + cd
-								+ "/" + f.getName());
-						e.printStackTrace();
-					}
-				}
-			}
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-
-	private void sendFTP() throws NumberFormatException, SocketException,
-			IOException {
+	private void sendFTP() throws Exception {
 
 		FTPClient ftp = new FTPClient();
 
@@ -1197,7 +1272,6 @@ public class CDBabySalesDataCrawler extends Thread {
 		ftp.changeWorkingDirectory(this.ftpDirectory);
 
 		this.sendFiles(dir, ftp);
-
 		ftp.noop(); // check that control connection is working OK
 
 		ftp.logout();

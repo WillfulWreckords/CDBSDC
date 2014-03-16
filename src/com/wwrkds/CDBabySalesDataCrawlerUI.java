@@ -30,7 +30,7 @@ import javax.swing.UnsupportedLookAndFeelException;
 
 public class CDBabySalesDataCrawlerUI {
 
-	static class DirListener implements ActionListener {
+	private static class DirListener implements ActionListener {
 		@Override
 		public void actionPerformed(ActionEvent e) {
 
@@ -54,7 +54,7 @@ public class CDBabySalesDataCrawlerUI {
 		}
 	}
 
-	static class GoListener implements ActionListener {
+	private static class GoListener implements ActionListener {
 		@Override
 		public void actionPerformed(ActionEvent e) {
 
@@ -69,32 +69,31 @@ public class CDBabySalesDataCrawlerUI {
 		}
 	}
 
-	static JButton btn, fbtn;
+	private static JButton btn, fbtn;
 
-	static JFileChooser dirc;
+	private static JFileChooser dirc;
 
-	static String directory = "", ftpDirectory = "", password = null,
+	private static String directory = "", ftpDirectory = "", password = null,
 			ftpPassword = null, timeout = "15", username = null,
 			ftpUsername = null, ftpPort = "21", browser = "firefox",
 			ftpServer = null;
-	static boolean doauto = false;
-
 	private static boolean docsv = false, doxml = false, doxlsx = false,
 			dohtml = true, doftp = false, orgByDate = true;
-	static JCheckBox docsvBox, dohtmlBox, doxlsxBox, doxmlBox, doftpBox,
-			orgByDateBox;
-	static JRadioButton firefoxButton, ieButton, chromeButton, safariButton;
-	static JFrame frame;
-	static ButtonGroup group;
-	static JTextArea jta;
-	static JScrollPane scrollPane;
-	static JTextField userField, passField, timeoutField, dirField,
+	private static JCheckBox docsvBox, dohtmlBox, doxlsxBox, doxmlBox,
+			doftpBox, orgByDateBox;
+	private static JRadioButton firefoxButton, ieButton, chromeButton,
+			safariButton;
+	private static JFrame frame;
+	private static ButtonGroup group;
+	private static JTextArea jta;
+	private static JScrollPane scrollPane;
+	private static JTextField userField, passField, timeoutField, dirField,
 			ftpUserField, ftpPassField, ftpDirField, ftpServerField,
 			ftpPortField;
 
-	static String version = "v1.0.4";
+	private static String version = "v1.0.5";
 
-	static void getGUIFieldData() {
+	private static void getGUIFieldData() {
 
 		CDBabySalesDataCrawlerUI.username = CDBabySalesDataCrawlerUI.userField
 				.getText();
@@ -139,10 +138,11 @@ public class CDBabySalesDataCrawlerUI {
 		}
 	}
 
-	static void getPrefs() {
+	private static void getPrefs() {
 		Class<?> cls = com.wwrkds.CDBabySalesDataCrawler.class;
 		// User and system preferences
 		Preferences userRoot = Preferences.userRoot();
+		@SuppressWarnings("unused")
 		Preferences sysRoot = Preferences.systemRoot();
 		Preferences userPrefs = userRoot.node(cls.getCanonicalName());
 		CDBabySalesDataCrawlerUI.username = userPrefs.get("username",
@@ -173,7 +173,11 @@ public class CDBabySalesDataCrawlerUI {
 
 	}
 
-	static void go() {
+	public static String getVersion() {
+		return CDBabySalesDataCrawlerUI.version;
+	}
+
+	private static void go() {
 
 		// Set the user preferences...
 		CDBabySalesDataCrawlerUI.setPrefs();
@@ -196,10 +200,6 @@ public class CDBabySalesDataCrawlerUI {
 				&& !CDBabySalesDataCrawlerUI.password.isEmpty()) {
 			System.out.print("Processing...\n");
 			System.out.flush();
-
-			String[] args2 = { "-u", CDBabySalesDataCrawlerUI.username, "-p",
-					CDBabySalesDataCrawlerUI.password, "-o",
-					CDBabySalesDataCrawlerUI.directory };
 
 			int to = Integer.parseInt(CDBabySalesDataCrawlerUI.timeout) * 1000;
 			CDBabySalesDataCrawler crawler = new CDBabySalesDataCrawler(
@@ -277,7 +277,7 @@ public class CDBabySalesDataCrawlerUI {
 		System.setErr(new PrintStream(out, true));
 	}
 
-	public static void run() {
+	private static void run() {
 
 		// ////////////////////////////////////////////////////////////
 		// Get System / User Preferences
@@ -573,7 +573,7 @@ public class CDBabySalesDataCrawlerUI {
 		System.out
 				.print("*********************************************************************************************************************\n");
 		System.out.print("CD Baby Sales Data Crawler ("
-				+ CDBabySalesDataCrawlerUI.version + "):\n");
+				+ CDBabySalesDataCrawlerUI.getVersion() + "):\n");
 		System.out
 				.print("\tWritten by: Jonathan J. Lareau - Willful Wreckords, LLC\n\twww.willfulwreckords.com\n\n");
 		System.out
@@ -600,7 +600,7 @@ public class CDBabySalesDataCrawlerUI {
 		CDBabySalesDataCrawlerUI.scrollPane.getVerticalScrollBar().setValue(0);
 	}
 
-	static void setGUIFieldData() {
+	private static void setGUIFieldData() {
 		CDBabySalesDataCrawlerUI.doxmlBox
 				.setSelected(CDBabySalesDataCrawlerUI.doxml);
 		CDBabySalesDataCrawlerUI.dohtmlBox
@@ -654,7 +654,7 @@ public class CDBabySalesDataCrawlerUI {
 		}
 	}
 
-	static void setPrefs() {
+	private static void setPrefs() {
 		Class<?> cls = com.wwrkds.CDBabySalesDataCrawler.class;
 		// User and system preferences
 		Preferences userRoot = Preferences.userRoot();
@@ -674,6 +674,10 @@ public class CDBabySalesDataCrawlerUI {
 		userPrefs.put("doxlsx", "" + CDBabySalesDataCrawlerUI.doxlsx);
 		userPrefs.put("doftp", "" + CDBabySalesDataCrawlerUI.doftp);
 		userPrefs.put("browser", CDBabySalesDataCrawlerUI.browser);
+	}
+
+	public static void setVersion(String version) {
+		CDBabySalesDataCrawlerUI.version = version;
 	}
 
 	// The following codes set where the text get redirected. In this case,
