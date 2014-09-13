@@ -13,6 +13,8 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -21,6 +23,10 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
 
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
@@ -44,10 +50,123 @@ import org.openqa.selenium.firefox.FirefoxDriver;
 
 public class CDBabySalesDataCrawler extends Thread {
 
+	public class WWRKDSRow<U, T> extends LinkedHashMap<U, T> {
+		private Set<String> labels = new LinkedHashSet<String>();
+
+		public WWRKDSRow(Map<U, T> data) {
+			super();
+			for (Entry<U, T> entry : data.entrySet()) {
+				this.put(entry.getKey(), entry.getValue());
+			}
+
+		}
+
+		public Set<String> getLabels() {
+			return this.labels;
+		}
+
+		public void setLabels(Set<String> labels) {
+			this.labels = labels;
+		}
+	}
+
+	public class WWRKDSTable<U, T> extends ArrayList<WWRKDSRow<U, T>> {
+
+		public WWRKDSTable(Collection<Map<U, T>> rows) {
+			super();
+			for (Map<U, T> row : rows) {
+				WWRKDSRow<U, T> r = new WWRKDSRow<U, T>(row);
+				this.add(r);
+			}
+		}
+
+		public Set<U> getColLabels() {
+			Set<U> ret = new HashSet<U>();
+			for (WWRKDSRow<U, T> row : this) {
+				for (U key : row.keySet()) {
+					ret.add(key);
+				}
+			}
+			return ret;
+		}
+
+		public String toHtml() {
+			String str = "<table border=1>\n";
+
+			str += "  <thead>";
+			str += "    <tr>\n";
+			str += "      <th></th>\n";
+			Set<U> cols = this.getColLabels();
+			for (U col : cols) {
+				str += "      <th>" + col + "</th>\n";
+			}
+			str += "    </tr>\n";
+			str += "  </thead>";
+
+			str += "  <tbody>\n";
+			for (WWRKDSRow<U, T> row : this) {
+				str += "    <tr>\n";
+
+				str += "      <td>";
+				String lbls = "";
+				for (String label : row.getLabels()) {
+					lbls += " " + label;
+				}
+				str += lbls.trim() + "</td>\n";
+
+				for (U col : cols) {
+					T c = row.get(col);
+					if (c != null) {
+						str += "      <td>" + c + "</td>\n";
+					} else {
+						str += "      <td></td>\n";
+					}
+				}
+
+				str += "    </tr>\n";
+			}
+			str += "  </tbody>\n";
+			str += "</table>\n";
+
+			return str;
+		}
+	}
+
+	public static synchronized <U, T> Collection<Map<U, T>> filter(
+			Collection<Map<U, T>> rows, String filter) {
+		List<Map<U, T>> ret = new ArrayList<Map<U, T>>();
+		for (Map<U, T> row : rows) {
+			if (CDBabySalesDataCrawler.satisfies(row, filter)) {
+				ret.add(row);
+			}
+		}
+		return ret;
+	}
+
+	@SafeVarargs
+	public static synchronized <U, T> Map<String, Collection<Map<U, T>>> groupBy(
+			Collection<Map<U, T>> rows, U... cols) {
+		Map<String, Collection<Map<U, T>>> groups = new HashMap<String, Collection<Map<U, T>>>();
+		for (Map<U, T> row : rows) {
+			String group = "";
+			for (U key : cols) {
+				if (row.get(key) != null) {
+					group += row.get(key) + "";
+				}
+			}
+			if (!groups.containsKey(group)) {
+				groups.put(group, new ArrayList<Map<U, T>>());
+			}
+			groups.get(group).add(row);
+		}
+		return groups;
+	}
+
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
+
 		try {
 			CDBabySalesDataCrawler crawler = new CDBabySalesDataCrawler();
 			crawler.parseArgs(args);
@@ -57,6 +176,99 @@ public class CDBabySalesDataCrawler extends Thread {
 			System.out
 					.println("There was an error when trying to run Crawler.");
 		}
+	}
+
+	/*
+	 * @SafeVarargs public static synchronized <U, T> Map<String, String> sum(
+	 * Collection<Map<U, T>> rows, U y, U... groupBy) { Set<U> gbs = new
+	 * LinkedHashSet<U>(); gbs.addAll(Arrays.asList(groupBy));
+	 * 
+	 * Map<String, String> output = new TreeMap<String, String>();
+	 * 
+	 * // Print rows for (Map<U, T> map : rows) { String group = ""; for (U g :
+	 * gbs) { T t = map.get(g); if (t != null) { group += t + " "; } } group =
+	 * group.trim();
+	 * 
+	 * String value = map.get(y) + ""; value = value.replace("$", "").trim(); if
+	 * (output.containsKey(group)) { try { double old =
+	 * Double.parseDouble(output.get(group)); double val =
+	 * Double.parseDouble(value); output.put(group, old + val + ""); } catch
+	 * (Exception e) { if (!output.get(group).trim().contains(value)) { String n
+	 * = output.get(group).trim() + " " + value; output.put(group, n.trim()); }
+	 * } } else { output.put(group, value.trim()); } } return output; }
+	 */
+
+	public static synchronized <U, T> boolean satisfies(Map<U, T> row,
+			String filter) {
+		for (Entry<U, T> entry : row.entrySet()) {
+			U key = entry.getKey();
+			T value = entry.getValue();
+
+			filter = filter.replaceAll(key + "", value + "");
+		}
+		// create a script engine manager
+		ScriptEngineManager factory = new ScriptEngineManager();
+		// create a JavaScript engine
+		ScriptEngine engine = factory.getEngineByName("JavaScript");
+		// evaluate JavaScript code from String
+		try {
+			Object obj = engine.eval(filter);
+			return (boolean) obj;
+		} catch (ScriptException e) {
+			return false;
+		}
+	}
+
+	public static synchronized <U, T> String sum(Collection<Map<U, T>> rows,
+			U col) {
+
+		String output = "";
+
+		// Print rows
+		for (Map<U, T> map : rows) {
+			String value = map.get(col) + "";
+			try {
+				double old = output.isEmpty() ? 0.0 : Double
+						.parseDouble(output);
+				double val = Double.parseDouble(value.replace("$", "").trim());
+				output = old + val + "";
+			} catch (Exception e) {
+				String n = output.trim() + " " + value;
+				output = n.trim();
+
+			}
+		}
+		return output;
+	}
+
+	public static synchronized <U, T> Collection<Map<String, String>> sum(
+			Map<String, Collection<Map<U, T>>> groupedRows, U col) {
+		Map<String, String> res = new HashMap<String, String>();
+		for (Entry<String, Collection<Map<U, T>>> entry : groupedRows
+				.entrySet()) {
+			String group = entry.getKey();
+			Collection<Map<U, T>> rows = entry.getValue();
+			String value = CDBabySalesDataCrawler.sum(rows, col);
+
+			if (res.containsKey(group)) {
+				try {
+					double old = Double.parseDouble(res.get(group));
+					double val = Double.parseDouble(value);
+					res.put(group, old + val + "");
+				} catch (Exception e) {
+					if (!res.get(group).trim().contains(value)) {
+						String n = res.get(group).trim() + " " + value;
+						res.put(group, n.trim());
+					}
+				}
+			} else {
+				res.put(group, value.trim());
+			}
+		}
+
+		List<Map<String, String>> out = new ArrayList<Map<String, String>>();
+		out.add(res);
+		return out;
 	}
 
 	public static synchronized void writeCSV(String filename, List<String> rows) {
@@ -450,8 +662,8 @@ public class CDBabySalesDataCrawler extends Thread {
 		}
 	}
 
-	private boolean doFtp = false, doXml = true, doXlsx = true, doHtml = true,
-			doCsv = true;
+	private boolean doFtp = false, doXml = false, doXlsx = false,
+			doHtml = false, doCsv = true;
 	private final boolean dosql = false;
 	private String drivername = "firefox";
 	private String ftpDirectory = null;
@@ -467,7 +679,7 @@ public class CDBabySalesDataCrawler extends Thread {
 	private int timedelay = 15000;
 	private String username = null;
 
-	public CDBabySalesDataCrawler() {
+	private CDBabySalesDataCrawler() {
 		// LicenseManager manager = new LicenseManager(
 		// com.wwrkds.CDBabySalesDataCrawler.class, "CDBSDC-ZIP",
 		// "http://willfulwreckords.com/Store/",
@@ -476,11 +688,6 @@ public class CDBabySalesDataCrawler extends Thread {
 	}
 
 	public CDBabySalesDataCrawler(String u, String p, String d, String s) {
-		// LicenseManager manager = new LicenseManager(
-		// com.wwrkds.CDBabySalesDataCrawler.class, "CDBSDC-ZIP",
-		// "http://willfulwreckords.com/Store/",
-		// "http://willfulwreckords.com/Software/license/");
-
 		this.setUsername(u);
 		this.setPassword(p);
 		this.setOutputDirectory(d);
@@ -489,12 +696,6 @@ public class CDBabySalesDataCrawler extends Thread {
 
 	public CDBabySalesDataCrawler(String u, String p, String d, String s,
 			int timeout) {
-
-		// LicenseManager manager = new LicenseManager(
-		// com.wwrkds.CDBabySalesDataCrawler.class, "CDBSDC-ZIP",
-		// "http://willfulwreckords.com/Store/",
-		// "http://willfulwreckords.com/Software/license/");
-
 		this.setUsername(u);
 		this.setPassword(p);
 		this.setOutputDirectory(d);
@@ -590,12 +791,116 @@ public class CDBabySalesDataCrawler extends Thread {
 	// return builder.parse(new ByteArrayInputStream(xml.getBytes()));
 	// }
 
+	/**
+	 * <p>
+	 * Accepted arguments
+	 * </p>
+	 * <table border=1>
+	 * <tr>
+	 * <td>required</td>
+	 * <td>[-username | -u] string</td>
+	 * <td>string = The CD Baby Account username to use</td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>required</td>
+	 * <td>[-password | -p] string</td>
+	 * <td>string = The CD Baby Account Password to use</td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>required</td>
+	 * <td>-outdir string</td>
+	 * <td>string = The output directory to place completed files</td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>-dohtml [true|false]</td>
+	 * <td></td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>-doxml [true|false]</td>
+	 * <td></td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>-docsv [true|false]</td>
+	 * <td></td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>-doxlsx [true|false]</td>
+	 * <td></td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>-doftp [true|false]</td>
+	 * <td></td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>-ftpusername string</td>
+	 * <td>string = The FTP username to use</td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>-ftppassword string</td>
+	 * <td>string = The FTP password to use</td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>-ftpserver string</td>
+	 * <td>string = The FTP server url to use</td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>-ftpport string</td>
+	 * <td>string = The FTP port to use</td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>-ftpdirectory string</td>
+	 * <td>string = The FTP directory to use</td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>-driver [(firefox) | chrome | safari | ie]</td>
+	 * <td>string = The WEBDriver to use to use</td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>-sheeetitle string</td>
+	 * <td>string = The Title of the xlsx sheet to use</td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>-startpage string</td>
+	 * <td>string = The url of the CDBaby login page</td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>-clickdelay string</td>
+	 * <td>string = The amount of click delay to use</td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>-h</td>
+	 * <td>Print help information</td>
+	 * </tr>
+	 * 
+	 * </table>
+	 * 
+	 * @param args
+	 */
 	public void parseArgs(String[] args) {
 
 		for (int i = 0; i < args.length; i++) {
-			if (args[i].toLowerCase().contentEquals("-username")) {
+			if (args[i].toLowerCase().contentEquals("-username")
+					|| args[i].toLowerCase().contentEquals("-u")) {
 				this.setUsername(args[++i]);
-			} else if (args[i].toLowerCase().contentEquals("-password")) {
+			} else if (args[i].toLowerCase().contentEquals("-password")
+					|| args[i].toLowerCase().contentEquals("-p")) {
 				this.setPassword(args[++i]);
 			} else if (args[i].toLowerCase().contentEquals("-outdir")) {
 				this.setOutputDirectory(args[++i]);
@@ -977,6 +1282,10 @@ public class CDBabySalesDataCrawler extends Thread {
 												revenueType.toUpperCase());
 
 										// Default partner value
+										row.put("USER", this.getUsername()
+												.toUpperCase());
+
+										// Default partner value
 										row.put("PARTNER", "CDBaby");
 
 										// Error checking and formatting of date
@@ -1028,14 +1337,36 @@ public class CDBabySalesDataCrawler extends Thread {
 											}
 										}
 
+										// Cleanup and extra formatting
 										if (row.get("DATE") != null) {
 											row.put("SALEDATE", row.get("DATE"));
 										}
 										if (row.get("SALES") != null) {
 											String dstr = row.get("SALES")
 													.trim();
-											dstr = dstr.replace("/", "/1/");
+											dstr = dstr.replace("/", "/01/");
 											row.put("SALEDATE", dstr);
+										}
+										if (row.get("SALEDATE") != null) {
+											String dstr = row.get("SALEDATE");
+
+											Matcher m = Pattern.compile(
+													"(\\d+)/(\\d+)/(\\d+)")
+													.matcher(dstr);
+											double yyyy = 0, mm = 0, dd = 0;
+											if (m.find()) {
+												yyyy = Double.parseDouble(m
+														.group(3));
+												mm = Double.parseDouble(m
+														.group(1));
+												dd = Double.parseDouble(m
+														.group(2));
+												TimeStamp date = new TimeStamp(
+														yyyy, mm, dd);
+												row.put("SALEDATE-MS1970",
+														(long) date.toMS1970()
+																+ "");
+											}
 										}
 
 										if (row.get("REVENUETYPE").matches(
@@ -1079,8 +1410,34 @@ public class CDBabySalesDataCrawler extends Thread {
 						// FINISH THIS SECTION....
 					}
 
+					System.out.println("this is a test");
+
 					this.writeOutputs(this.getOutputDirectory() + "Complete",
 							completeData);
+
+					this.writeOutputs(this.getOutputDirectory() + "ByPartner",
+							CDBabySalesDataCrawler.sum(CDBabySalesDataCrawler
+									.groupBy(completeData, "PARTNER"),
+									"PAYABLE"));
+
+					this.writeOutputs(this.getOutputDirectory() + "ByAlbum",
+							CDBabySalesDataCrawler.sum(CDBabySalesDataCrawler
+									.groupBy(completeData, "ALBUM"), "PAYABLE"));
+
+					this.writeOutputs(
+							this.getOutputDirectory() + "ByArtist",
+							CDBabySalesDataCrawler.sum(CDBabySalesDataCrawler
+									.groupBy(completeData, "ARTIST"), "PAYABLE"));
+
+					this.writeOutputs(this.getOutputDirectory() + "BySong",
+							CDBabySalesDataCrawler.sum(CDBabySalesDataCrawler
+									.groupBy(completeData, "ALBUM", "ARTIST",
+											"SONG"), "PAYABLE"));
+
+					this.writeOutputs(this.getOutputDirectory() + "BySaleDate",
+							CDBabySalesDataCrawler.sum(CDBabySalesDataCrawler
+									.groupBy(completeData, "SALEDATE"),
+									"PAYABLE"));
 
 					/*
 					 * //
@@ -1363,42 +1720,6 @@ public class CDBabySalesDataCrawler extends Thread {
 	}
 
 	public <U, T> void writeOutputs(String filename, Collection<Map<U, T>> rows) {
-
-		/*
-		 * if (this.doXml) { // Write to XML file ...
-		 * System.out.print(">>Writing XML\n"); System.out.flush();
-		 * CDBabySalesDataCrawler.writeXML( this.getOutputDirectory() +
-		 * albumTitle + File.separator + revenueType + ".xml", data); }
-		 * 
-		 * if (this.dosql) { // FINISH THIS SECTION.... String sql = "";
-		 * 
-		 * sql += "CREATE TABLE IF NOT EXISTS `cdb_project` (" +
-		 * "cdb_project_id NOT NULL auto_increment" +
-		 * "`project_artist` varchar(255), `project_title` varchar(255));\n";
-		 * sql += "INSERT INTO `cdb_project` (";
-		 * 
-		 * String tableName = "cdb_" + revenueType.replace("-", "_")
-		 * .toLowerCase(); String[] h = data.get(0).split(",");
-		 * 
-		 * // sql += // "DROP TABLE IF EXISTS '"+tableName+"';\n"; if
-		 * (revenueType .matches("DIGITAL.+DISTRIBUTION.+SALES") && h.length ==
-		 * 11) {
-		 * 
-		 * sql += "CREATE TABLE IF NOT EXISTS `" + tableName + "` (" + "" +
-		 * tableName + "_id NOT NULL auto_increment" +
-		 * "`report` varchar(32), `sales` varchar(32), `partner` varchar(255), "
-		 * +
-		 * "`artist` varchar(255), `album` varchar(255), `song` varchar(255), "
-		 * + "`cover` varchar(255), `type` varchar(255), `qty` varchar(32), " +
-		 * "`unit` varchar(255), `payable` varchar(255));\n"; for (int row = 1;
-		 * row < data.size(); row++) { String[] contents = data.get(row)
-		 * .split(","); sql += "INSERT INTO `" + tableName + "` (" +
-		 * "`report`, `sales`, `partner`, " + "`artist`, `album`, `song`, " +
-		 * "`cover`, `type`, `qty`, " + "`unit`, `payable`) VALUES ("; int k =
-		 * 0; for (String c : contents) { if (k++ > 0) { sql += ", "; } sql +=
-		 * c; } sql += ");\n"; } } }
-		 */
-
 		System.out.print(">>Writing outputs for "
 				+ new File(filename).getName() + "\n");
 		System.out.flush();
@@ -1438,11 +1759,11 @@ public class CDBabySalesDataCrawler extends Thread {
 
 	public <U, T> void writeOutputs(String filename, U[] x, T[] y) {
 		List<Map<U, T>> data = new ArrayList<Map<U, T>>();
+		Map<U, T> map = new HashMap<U, T>();
 		for (int i = 0; i < x.length; i++) {
-			Map<U, T> map = new HashMap<U, T>();
 			map.put(x[i], y[i]);
-			data.add(map);
 		}
+		data.add(map);
 		this.writeOutputs(filename, data);
 	}
 
