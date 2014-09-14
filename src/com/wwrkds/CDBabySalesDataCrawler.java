@@ -130,6 +130,10 @@ public class CDBabySalesDataCrawler extends Thread {
 
 			return str;
 		}
+
+		public String toJson() {
+			return null;
+		}
 	}
 
 	public static synchronized <U, T> Collection<Map<U, T>> filter(
