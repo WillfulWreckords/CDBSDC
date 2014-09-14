@@ -13,8 +13,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -23,10 +21,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
 
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
@@ -48,123 +42,9 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.firefox.FirefoxDriver;
 
+import datamodels.TimeStamp;
+
 public class CDBabySalesDataCrawler extends Thread {
-
-	public class WWRKDSRow<U, T> extends LinkedHashMap<U, T> {
-		private Set<String> labels = new LinkedHashSet<String>();
-
-		public WWRKDSRow(Map<U, T> data) {
-			super();
-			for (Entry<U, T> entry : data.entrySet()) {
-				this.put(entry.getKey(), entry.getValue());
-			}
-
-		}
-
-		public Set<String> getLabels() {
-			return this.labels;
-		}
-
-		public void setLabels(Set<String> labels) {
-			this.labels = labels;
-		}
-	}
-
-	public class WWRKDSTable<U, T> extends ArrayList<WWRKDSRow<U, T>> {
-
-		public WWRKDSTable(Collection<Map<U, T>> rows) {
-			super();
-			for (Map<U, T> row : rows) {
-				WWRKDSRow<U, T> r = new WWRKDSRow<U, T>(row);
-				this.add(r);
-			}
-		}
-
-		public Set<U> getColLabels() {
-			Set<U> ret = new HashSet<U>();
-			for (WWRKDSRow<U, T> row : this) {
-				for (U key : row.keySet()) {
-					ret.add(key);
-				}
-			}
-			return ret;
-		}
-
-		public String toHtml() {
-			String str = "<table border=1>\n";
-
-			str += "  <thead>";
-			str += "    <tr>\n";
-			str += "      <th></th>\n";
-			Set<U> cols = this.getColLabels();
-			for (U col : cols) {
-				str += "      <th>" + col + "</th>\n";
-			}
-			str += "    </tr>\n";
-			str += "  </thead>";
-
-			str += "  <tbody>\n";
-			for (WWRKDSRow<U, T> row : this) {
-				str += "    <tr>\n";
-
-				str += "      <td>";
-				String lbls = "";
-				for (String label : row.getLabels()) {
-					lbls += " " + label;
-				}
-				str += lbls.trim() + "</td>\n";
-
-				for (U col : cols) {
-					T c = row.get(col);
-					if (c != null) {
-						str += "      <td>" + c + "</td>\n";
-					} else {
-						str += "      <td></td>\n";
-					}
-				}
-
-				str += "    </tr>\n";
-			}
-			str += "  </tbody>\n";
-			str += "</table>\n";
-
-			return str;
-		}
-
-		public String toJson() {
-			return null;
-		}
-	}
-
-	public static synchronized <U, T> Collection<Map<U, T>> filter(
-			Collection<Map<U, T>> rows, String filter) {
-		List<Map<U, T>> ret = new ArrayList<Map<U, T>>();
-		for (Map<U, T> row : rows) {
-			if (CDBabySalesDataCrawler.satisfies(row, filter)) {
-				ret.add(row);
-			}
-		}
-		return ret;
-	}
-
-	@SafeVarargs
-	public static synchronized <U, T> Map<String, Collection<Map<U, T>>> groupBy(
-			Collection<Map<U, T>> rows, U... cols) {
-		Map<String, Collection<Map<U, T>>> groups = new HashMap<String, Collection<Map<U, T>>>();
-		for (Map<U, T> row : rows) {
-			String group = "";
-			for (U key : cols) {
-				if (row.get(key) != null) {
-					group += row.get(key) + "";
-				}
-			}
-			if (!groups.containsKey(group)) {
-				groups.put(group, new ArrayList<Map<U, T>>());
-			}
-			groups.get(group).add(row);
-		}
-		return groups;
-	}
 
 	/**
 	 * @param args
@@ -201,27 +81,6 @@ public class CDBabySalesDataCrawler extends Thread {
 	 * = output.get(group).trim() + " " + value; output.put(group, n.trim()); }
 	 * } } else { output.put(group, value.trim()); } } return output; }
 	 */
-
-	public static synchronized <U, T> boolean satisfies(Map<U, T> row,
-			String filter) {
-		for (Entry<U, T> entry : row.entrySet()) {
-			U key = entry.getKey();
-			T value = entry.getValue();
-
-			filter = filter.replaceAll(key + "", value + "");
-		}
-		// create a script engine manager
-		ScriptEngineManager factory = new ScriptEngineManager();
-		// create a JavaScript engine
-		ScriptEngine engine = factory.getEngineByName("JavaScript");
-		// evaluate JavaScript code from String
-		try {
-			Object obj = engine.eval(filter);
-			return (boolean) obj;
-		} catch (ScriptException e) {
-			return false;
-		}
-	}
 
 	public static synchronized <U, T> String sum(Collection<Map<U, T>> rows,
 			U col) {

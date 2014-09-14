@@ -1,4 +1,4 @@
-package com.wwrkds;
+package datamodels;
 
 import java.io.Serializable;
 import java.util.Collections;

@@ -21,5 +21,6 @@
 	<classpathentry kind="lib" path="xlib/uuid-3.4.jar"/>
 	<classpathentry kind="lib" path="xlib/jsoup-1.7.3.jar"/>
 	<classpathentry kind="lib" path="xlib/selenium-server-standalone-2.43.0.jar"/>
+	<classpathentry kind="lib" path="xlib/gson-2.3.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
