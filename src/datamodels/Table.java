@@ -47,6 +47,8 @@ public class Table extends ArrayList<Row> {
 		return out;
 	}
 
+	private String name = "";
+
 	public Table() {
 		super();
 	}
@@ -135,6 +137,10 @@ public class Table extends ArrayList<Row> {
 		return ret;
 	}
 
+	public String getName() {
+		return this.name;
+	}
+
 	/**
 	 * Group by unique entries in the given columns
 	 * 
@@ -200,6 +206,10 @@ public class Table extends ArrayList<Row> {
 			}
 		}
 		return output;
+	}
+
+	public void setName(String name) {
+		this.name = name;
 	}
 
 	/**
@@ -294,11 +304,12 @@ public class Table extends ArrayList<Row> {
 		str += "  </thead>";
 
 		str += "  <tbody>\n";
+		int count = 1;
 		for (Row row : this) {
 			str += "    <tr>\n";
 
 			str += "      <td>";
-			String lbls = "";
+			String lbls = count++ + "";
 			for (String label : row.getLabels()) {
 				lbls += " " + label;
 			}
