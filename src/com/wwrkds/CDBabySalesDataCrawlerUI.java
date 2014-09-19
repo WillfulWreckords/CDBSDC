@@ -31,20 +31,31 @@ import javax.swing.UnsupportedLookAndFeelException;
 public class CDBabySalesDataCrawlerUI {
 
 	private static class DirListener implements ActionListener {
+
+		public final JFileChooser chooser;
+		public boolean dirFlag;
+		public final JTextField field;
+
+		public DirListener(JFileChooser chooser, JTextField field,
+				boolean dirFlag) {
+			this.field = field;
+			this.chooser = chooser;
+			this.dirFlag = dirFlag;
+		}
+
 		@Override
 		public void actionPerformed(ActionEvent e) {
 
-			int returnVal = CDBabySalesDataCrawlerUI.dirc
+			int returnVal = this.chooser
 					.showOpenDialog(CDBabySalesDataCrawlerUI.frame
 							.getContentPane());
 
 			if (returnVal == JFileChooser.APPROVE_OPTION) {
-				File file = CDBabySalesDataCrawlerUI.dirc.getSelectedFile();
-				if (!file.isDirectory()) {
+				File file = this.chooser.getSelectedFile();
+				if (!file.isDirectory() && this.dirFlag) {
 					file = file.getParentFile();
 				}
-				CDBabySalesDataCrawlerUI.dirField.setText(file
-						.getAbsolutePath());
+				this.field.setText(file.getAbsolutePath());
 
 				// This is where a real application would open the file.
 				// log.append("Opening: " + file.getName() + "." + newline);
@@ -76,22 +87,25 @@ public class CDBabySalesDataCrawlerUI {
 	private static String directory = "", ftpDirectory = "", password = null,
 			ftpPassword = null, timeout = "15", username = null,
 			ftpUsername = null, ftpPort = "21", browser = "firefox",
-			ftpServer = null;
+			ftpServer = null,
+			startPage = "https://members.cdbaby.com/Login.aspx";
 	private static boolean docsv = false, doxml = false, doxlsx = false,
 			dohtml = true, doftp = false, orgByDate = true;
 	private static JCheckBox docsvBox, dohtmlBox, doxlsxBox, doxmlBox,
 			doftpBox, orgByDateBox;
+	private static JButton fbtn1;
 	private static JRadioButton firefoxButton, ieButton, chromeButton,
 			safariButton;
 	private static JFrame frame;
 	private static ButtonGroup group;
 	private static JTextArea jta;
 	private static JScrollPane scrollPane;
-	private static JTextField userField, passField, timeoutField, dirField,
-			ftpUserField, ftpPassField, ftpDirField, ftpServerField,
-			ftpPortField;
 
-	private static String version = "v1.0.5";
+	private static JTextField userField, passField, timeoutField, dirField,
+			ftpUserField, ftpPassField, ftpDirField, startPageField,
+			ftpServerField, ftpPortField;
+
+	private static String version = "v1.0.7";
 
 	private static void getGUIFieldData() {
 
@@ -112,6 +126,8 @@ public class CDBabySalesDataCrawlerUI {
 		CDBabySalesDataCrawlerUI.ftpPort = CDBabySalesDataCrawlerUI.ftpPortField
 				.getText();
 		CDBabySalesDataCrawlerUI.ftpServer = CDBabySalesDataCrawlerUI.ftpServerField
+				.getText();
+		CDBabySalesDataCrawlerUI.startPage = CDBabySalesDataCrawlerUI.startPageField
 				.getText();
 
 		CDBabySalesDataCrawlerUI.doxml = CDBabySalesDataCrawlerUI.doxmlBox
@@ -170,6 +186,8 @@ public class CDBabySalesDataCrawlerUI {
 		CDBabySalesDataCrawlerUI.orgByDate = Boolean.parseBoolean(userPrefs
 				.get("orgByDate", "true"));
 		CDBabySalesDataCrawlerUI.browser = userPrefs.get("browser", "firefox");
+		// CDBabySalesDataCrawlerUI.startPage = userPrefs.get("startpage",
+		// "https://members.cdbaby.com/Login.aspx");
 
 	}
 
@@ -216,8 +234,8 @@ public class CDBabySalesDataCrawlerUI {
 			crawler.setFtpDirectory(CDBabySalesDataCrawlerUI.ftpDirectory);
 			crawler.setFtpUsername(CDBabySalesDataCrawlerUI.ftpUsername);
 			crawler.setFtpPassword(CDBabySalesDataCrawlerUI.ftpPassword);
-
 			crawler.setDrivername(CDBabySalesDataCrawlerUI.browser);
+			crawler.setStartpage(CDBabySalesDataCrawlerUI.startPage);
 			crawler.start();
 
 		} else {
@@ -352,9 +370,11 @@ public class CDBabySalesDataCrawlerUI {
 		CDBabySalesDataCrawlerUI.btn.setAlignmentX(Component.CENTER_ALIGNMENT);
 		CDBabySalesDataCrawlerUI.btn.setEnabled(true);
 
-		CDBabySalesDataCrawlerUI.fbtn = new JButton("Choose Output Directory");
-		CDBabySalesDataCrawlerUI.fbtn.addActionListener(new DirListener());
-		CDBabySalesDataCrawlerUI.fbtn.setAlignmentX(Component.CENTER_ALIGNMENT);
+		CDBabySalesDataCrawlerUI.startPageField = new JTextField(15);
+		CDBabySalesDataCrawlerUI.startPageField.setVisible(true);
+		CDBabySalesDataCrawlerUI.startPageField.setEditable(false);
+		CDBabySalesDataCrawlerUI.startPageField
+				.setAlignmentX(Component.CENTER_ALIGNMENT);
 
 		// Create the username field
 		CDBabySalesDataCrawlerUI.userField = new JTextField(15);
@@ -476,6 +496,19 @@ public class CDBabySalesDataCrawlerUI {
 		CDBabySalesDataCrawlerUI.doftpBox
 				.setAlignmentX(Component.CENTER_ALIGNMENT);
 
+		CDBabySalesDataCrawlerUI.fbtn1 = new JButton("Choose Alternate Input");
+		CDBabySalesDataCrawlerUI.fbtn1.addActionListener(new DirListener(
+				CDBabySalesDataCrawlerUI.dirc,
+				CDBabySalesDataCrawlerUI.startPageField, false));
+		CDBabySalesDataCrawlerUI.fbtn1
+				.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+		CDBabySalesDataCrawlerUI.fbtn = new JButton("Choose Output Directory");
+		CDBabySalesDataCrawlerUI.fbtn.addActionListener(new DirListener(
+				CDBabySalesDataCrawlerUI.dirc,
+				CDBabySalesDataCrawlerUI.dirField, true));
+		CDBabySalesDataCrawlerUI.fbtn.setAlignmentX(Component.CENTER_ALIGNMENT);
+
 		// Add components
 		CDBabySalesDataCrawlerUI.frame.getContentPane().add(
 				CDBabySalesDataCrawlerUI.scrollPane);
@@ -488,6 +521,16 @@ public class CDBabySalesDataCrawlerUI {
 		tf.add(CDBabySalesDataCrawlerUI.ieButton);
 		CDBabySalesDataCrawlerUI.frame.getContentPane().add(tf);
 
+		JPanel of = new JPanel();
+		of.add(CDBabySalesDataCrawlerUI.fbtn1);
+		of.add(CDBabySalesDataCrawlerUI.startPageField);
+		CDBabySalesDataCrawlerUI.frame.getContentPane().add(of);
+
+		JPanel us = new JPanel();
+		us.add(new JLabel("Location: "));
+		us.add(CDBabySalesDataCrawlerUI.startPageField);
+		CDBabySalesDataCrawlerUI.frame.getContentPane().add(us);
+
 		JPanel uf = new JPanel();
 		uf.add(new JLabel("Username: "));
 		uf.add(CDBabySalesDataCrawlerUI.userField);
@@ -498,10 +541,10 @@ public class CDBabySalesDataCrawlerUI {
 		pf.add(CDBabySalesDataCrawlerUI.passField);
 		CDBabySalesDataCrawlerUI.frame.getContentPane().add(pf);
 
-		JPanel of = new JPanel();
-		of.add(CDBabySalesDataCrawlerUI.fbtn);
-		of.add(CDBabySalesDataCrawlerUI.dirField);
-		CDBabySalesDataCrawlerUI.frame.getContentPane().add(of);
+		JPanel of2 = new JPanel();
+		of2.add(CDBabySalesDataCrawlerUI.fbtn);
+		of2.add(CDBabySalesDataCrawlerUI.dirField);
+		CDBabySalesDataCrawlerUI.frame.getContentPane().add(of2);
 
 		JPanel of1 = new JPanel();
 		of1.add(new JLabel("Org by date: "));
@@ -634,6 +677,8 @@ public class CDBabySalesDataCrawlerUI {
 				.setText(CDBabySalesDataCrawlerUI.ftpPort);
 		CDBabySalesDataCrawlerUI.ftpDirField
 				.setText(CDBabySalesDataCrawlerUI.ftpDirectory);
+		CDBabySalesDataCrawlerUI.startPageField
+				.setText(CDBabySalesDataCrawlerUI.startPage);
 
 		String bwsr = CDBabySalesDataCrawlerUI.browser;
 		CDBabySalesDataCrawlerUI.firefoxButton.setSelected(true);
@@ -674,6 +719,7 @@ public class CDBabySalesDataCrawlerUI {
 		userPrefs.put("doxlsx", "" + CDBabySalesDataCrawlerUI.doxlsx);
 		userPrefs.put("doftp", "" + CDBabySalesDataCrawlerUI.doftp);
 		userPrefs.put("browser", CDBabySalesDataCrawlerUI.browser);
+		userPrefs.put("startpage", CDBabySalesDataCrawlerUI.startPage);
 	}
 
 	public static void setVersion(String version) {

@@ -222,7 +222,7 @@ public class Sort {
 			List<T> obj, RankingOrder ro) {
 		int sz = num.size();
 		Comparable[] k = num.toArray(new Comparable[sz]);
-		Object[] v = obj.toArray(new Comparable[sz]);
+		Object[] v = obj.toArray(new Object[sz]);
 		int[] idx = Sort.BubbleSort(k, v, ro);
 		Sort.reorderInPlace(num, idx);
 		Sort.reorderInPlace(obj, idx);

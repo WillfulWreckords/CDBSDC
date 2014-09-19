@@ -1,21 +1,23 @@
 package datamodels;
 
+import java.util.Collection;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 /**
  * @author jonlareau
  * 
  */
-public class Row extends LinkedHashMap<String, String> {
-	private final Set<String> labels = new LinkedHashSet<String>();
+public class Row implements Map<String, String> {
+	private final LinkedHashMap<String, String> elements = new LinkedHashMap<String, String>();
 
 	public Row() {
 		super();
@@ -48,39 +50,29 @@ public class Row extends LinkedHashMap<String, String> {
 		}
 	}
 
-	/**
-	 * Constructor will convert all inputs to Strings using their toString()
-	 * method.
-	 * 
-	 * @param rowLabels
-	 * @param data
-	 */
-	@SafeVarargs
-	public <A, B, C> Row(Set<A> rowLabels, Entry<B, C>... data) {
-		super();
-		for (Entry<B, C> entry : data) {
-			this.put(entry.getKey().toString(), entry.getValue().toString());
-		}
-		for (A a : rowLabels) {
-			this.labels.add(a.toString());
-		}
+	@Override
+	public void clear() {
+		this.elements.clear();
 	}
 
-	/**
-	 * Constructor will convert all inputs to Strings using their toString()
-	 * method.
-	 * 
-	 * @param rowLabels
-	 * @param data
-	 */
-	public <A, B, C> Row(Set<A> rowLabels, Map<B, C> data) {
-		super();
-		for (Entry<B, C> entry : data.entrySet()) {
-			this.put(entry.getKey().toString(), entry.getValue().toString());
-		}
-		for (A a : rowLabels) {
-			this.labels.add(a.toString());
-		}
+	@Override
+	public boolean containsKey(Object key) {
+		return this.elements.containsKey(key);
+	}
+
+	@Override
+	public boolean containsValue(Object value) {
+		return this.elements.containsValue(value);
+	}
+
+	@Override
+	public Set<java.util.Map.Entry<String, String>> entrySet() {
+		return this.elements.entrySet();
+	}
+
+	@Override
+	public String get(Object key) {
+		return this.elements.get(key);
 	}
 
 	/**
@@ -113,16 +105,52 @@ public class Row extends LinkedHashMap<String, String> {
 			return 0;
 		}
 		val = val.trim();
-		if (val.matches("-?$?\\d*\\.?\\d+")) {
-			val = val.replace("$", "");
-			return Double.parseDouble(this.get(col));
-		} else {
+		val = val.replace("$", "");
+		try {
+			return Double.parseDouble(val);
+		} catch (Exception e) {
 			return 0;
 		}
 	}
 
-	public Set<String> getLabels() {
-		return this.labels;
+	public boolean isDouble(String col) {
+		String val = this.get(col);
+		if (val == null || val.trim().isEmpty()) {
+			return false;
+		}
+		val = val.trim();
+		val = val.replace("$", "");
+		try {
+			Double.parseDouble(val);
+			return true;
+		} catch (Exception e) {
+			return false;
+		}
+	}
+
+	@Override
+	public boolean isEmpty() {
+		return this.elements.isEmpty();
+	}
+
+	@Override
+	public Set<String> keySet() {
+		return this.elements.keySet();
+	}
+
+	@Override
+	public String put(String key, String value) {
+		return this.elements.put(key, value);
+	}
+
+	@Override
+	public void putAll(Map<? extends String, ? extends String> m) {
+		this.elements.putAll(m);
+	}
+
+	@Override
+	public String remove(Object key) {
+		return this.elements.remove(key);
 	}
 
 	/**
@@ -151,5 +179,26 @@ public class Row extends LinkedHashMap<String, String> {
 		} catch (ScriptException e) {
 			return false;
 		}
+	}
+
+	@Override
+	public int size() {
+		return this.elements.size();
+	}
+
+	/**
+	 * Convert to a JSON string
+	 * 
+	 * @return
+	 */
+	public String toJson() {
+		Gson gson = new GsonBuilder().serializeSpecialFloatingPointValues()
+				.serializeNulls().create();
+		return gson.toJson(this);
+	}
+
+	@Override
+	public Collection<String> values() {
+		return this.elements.values();
 	}
 }

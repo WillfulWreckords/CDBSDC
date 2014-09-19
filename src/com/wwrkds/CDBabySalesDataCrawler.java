@@ -2,21 +2,16 @@ package com.wwrkds;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -27,12 +22,6 @@ import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPClientConfig;
 import org.apache.commons.net.ftp.FTPReply;
 import org.apache.log4j.varia.NullAppender;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.xssf.usermodel.XSSFCreationHelper;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -42,6 +31,8 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.firefox.FirefoxDriver;
 
+import datamodels.Row;
+import datamodels.Table;
 import datamodels.TimeStamp;
 
 public class CDBabySalesDataCrawler extends Thread {
@@ -134,399 +125,8 @@ public class CDBabySalesDataCrawler extends Thread {
 		return out;
 	}
 
-	public static synchronized void writeCSV(String filename, List<String> rows) {
-		try {
-			File file = new File(filename);
-			file.getParentFile().mkdirs();
-			PrintStream out = new PrintStream(file);
-			for (String rowdata : rows) {
-				out.println(rowdata);
-			}
-			// workbook.write(out);
-			out.close();
-		} catch (FileNotFoundException e) {
-			// e.printStackTrace();
-		}
-	}
-
-	public static synchronized <U, T> void writeCSVRows(String filename,
-			Collection<Map<U, T>> rows) {
-		try {
-			File file = new File(filename);
-			file.getParentFile().mkdirs();
-			PrintStream out = new PrintStream(file);
-
-			Set<U> headers = new HashSet<U>();
-
-			// Collect header information
-			for (Map<U, T> map : rows) {
-				headers.addAll(map.keySet());
-			}
-
-			// Print header information
-			for (U header : headers) {
-				out.print(header.toString().replace(",", "") + ",\t");
-			}
-			out.println();
-
-			// Print rows
-			for (Map<U, T> map : rows) {
-				for (U header : headers) {
-					String str = map.get(header) + "";
-					if (map.get(header) == null) {
-						str = " ";
-					}
-					out.print(str.replace(",", "") + ",\t");
-				}
-				out.println();
-			}
-			out.close();
-		} catch (FileNotFoundException e) {
-			// e.printStackTrace();
-		}
-	}
-
-	public static synchronized void writeHTML(String filename, List<String> rows) {
-		try {
-			File file = new File(filename);
-			file.getParentFile().mkdirs();
-
-			PrintStream out = new PrintStream(file);
-			out.println("<html>");
-			out.println("  <title>" + file.getName().replace(".html", "")
-					+ "</title>");
-			out.println("  <head>");
-			out.println("      <script src=\"http://willfulwreckords.com/Software/scripts/flot/excanvas.min.js\"></script>");
-			out.println("      <script src=\"http://code.jquery.com/jquery-1.10.1.min.js\"></script>");
-			out.println("      <script src=\"http://willfulwreckords.com/Software/scripts/flot/jquery.flot.min.js\"></script>");
-			out.println("      <script src=\"http://willfulwreckords.com/Software/scripts/sdc/sdc.js\"></script>");
-			out.println("      <link rel=\"stylesheet\" type=\"text/css\" href=\"http://willfulwreckords.com/Software/scripts/sdc/sdc.css\">");
-			out.println("  </head>");
-			out.println("  <body>");
-			out.println("    <table class='dataTable'>");
-
-			String headerrowdata = rows.get(0);
-			String[] hobj = headerrowdata.split(",");
-			out.println("      <thead><tr>");
-			for (String s : hobj) {
-				out.println("        <th>" + s.trim() + "</th>");
-			}
-			out.println("      </tr></thead>");
-
-			out.println("      <tbody>");
-			for (int ri = 1; ri < rows.size(); ri++) {
-				String rowdata = rows.get(ri);
-				String[] obj = rowdata.split(",");
-				out.println("      <tr>");
-				for (int si = 0; si < obj.length; si++) {
-					String s = obj[si];
-					String c = hobj[si];
-					out.print("        <td class=\"" + c.trim() + "\">"
-							+ s.trim() + "</td>");
-				}
-				out.println("      </tr>");
-			}
-			out.println("      </tbody>");
-			out.println("    </table>");
-			out.println("  </body>");
-			out.println("</html>");
-			// workbook.write(out);
-			out.close();
-		} catch (FileNotFoundException e) {
-			// e.printStackTrace();
-		}
-	}
-
-	public static synchronized <U, T> void writeHTMLRows(String filename,
-			Collection<Map<U, T>> rows) {
-		try {
-			File file = new File(filename);
-			file.getParentFile().mkdirs();
-
-			PrintStream out = new PrintStream(file);
-			out.println("<html>");
-			out.println("  <title>" + file.getName().replace(".html", "")
-					+ "</title>");
-			out.println("  <head>");
-			out.println("      <script src=\"http://willfulwreckords.com/Software/scripts/flot/excanvas.min.js\"></script>");
-			out.println("      <script src=\"http://code.jquery.com/jquery-1.10.1.min.js\"></script>");
-			out.println("      <script src=\"http://willfulwreckords.com/Software/scripts/flot/jquery.flot.min.js\"></script>");
-			out.println("      <script src=\"http://willfulwreckords.com/Software/scripts/sdc/sdc.js\"></script>");
-			out.println("      <link rel=\"stylesheet\" type=\"text/css\" href=\"http://willfulwreckords.com/Software/scripts/sdc/sdc.css\">");
-			out.println("  </head>");
-			out.println("  <body>");
-			out.println("    <table class='dataTable'>");
-
-			Set<U> headers = new HashSet<U>();
-
-			// Collect header information
-			for (Map<U, T> map : rows) {
-				headers.addAll(map.keySet());
-			}
-
-			// Print header information
-			out.println("      <thead><tr>");
-			for (U header : headers) {
-				// out.print(header.replace(",", "") + ",\t");
-				out.println("        <th>" + header + "</th>");
-			}
-			out.println("      </tr></thead>");
-
-			// Print rows
-			out.println("      <tbody>");
-			for (Map<U, T> map : rows) {
-				out.println("          <tr>");
-				for (U header : headers) {
-					String str = map.get(header) + "";
-					if (map.get(header) == null) {
-						str = " ";
-					}
-					// out.print(str.replace(",", "") + ",\t");
-					out.print("        <td class=\"" + header + "\">" + str
-							+ "</td>");
-				}
-				out.println("          </tr>");
-				out.println();
-			}
-			out.println("      </tbody>");
-			out.println("    </table>");
-			out.println("  </body>");
-			out.println("</html>");
-			// workbook.write(out);
-			out.close();
-		} catch (FileNotFoundException e) {
-			// e.printStackTrace();
-		}
-	}
-
-	public static synchronized void writeStringToFile(String filename,
-			String text) {
-		try {
-			File file = new File(filename);
-			file.getParentFile().mkdirs();
-			PrintStream out = new PrintStream(file);
-			// for (String rowdata : rows) {
-			out.print(text);
-			// }
-			// workbook.write(out);
-			out.close();
-		} catch (FileNotFoundException e) {
-			// e.printStackTrace();
-		}
-	}
-
-	public static synchronized void writeXLSX(String filename, String title,
-			List<String> rows) {
-		XSSFWorkbook workbook = new XSSFWorkbook();
-		if (title == null) {
-			title = "Data";
-		}
-		XSSFSheet sheet = workbook.createSheet(title);
-		int rownum = 0;
-		for (String rowdata : rows) {
-			Row row = sheet.createRow(rownum++);
-			String[] cols = rowdata.split(",");
-			int cellnum = 0;
-			for (String obj : cols) {
-				Cell cell = row.createCell(cellnum++);
-				if (obj.contains("$")) {
-					cell.setCellValue(new Double(obj.replace("$", "")));
-					cell.setCellType(Cell.CELL_TYPE_NUMERIC);
-				} else {
-					cell.setCellValue(obj);
-				}
-			}
-		}
-		try {
-			File file = new File(filename);
-			file.getParentFile().mkdirs();
-			FileOutputStream out = new FileOutputStream(file);
-			workbook.write(out);
-			out.close();
-		} catch (FileNotFoundException e) {
-			// e.printStackTrace();
-		} catch (IOException e) {
-			// e.printStackTrace();
-		}
-	}
-
-	public static synchronized <U, T> void writeXLSXRows(String filename,
-			String title, Collection<Map<U, T>> rows) {
-		XSSFWorkbook workbook = new XSSFWorkbook();
-		if (title == null) {
-			title = "Data";
-		}
-		XSSFSheet sheet = workbook.createSheet(title);
-		XSSFCreationHelper createHelper = workbook.getCreationHelper();
-		int rownum = 0;
-
-		Set<U> headers = new HashSet<U>();
-
-		// Collect header information
-		for (Map<U, T> map : rows) {
-			headers.addAll(map.keySet());
-		}
-
-		// Print header information
-		Row row = sheet.createRow(rownum++);
-		int cellnum = 0;
-		for (U header : headers) {
-			Cell cell = row.createCell(cellnum++);
-
-			if (header.toString().contains("$")) {
-				cell.setCellValue(new Double(header.toString().replace("$", "")));
-				cell.setCellType(Cell.CELL_TYPE_NUMERIC);
-			} else {
-				cell.setCellValue(header.toString());
-			}
-
-			// out.print(header.replace(",", "") + ",\t");
-		}
-		// out.println();
-
-		// Print rows
-		for (Map<U, T> map : rows) {
-			row = sheet.createRow(rownum++);
-			cellnum = 0;
-			for (U header : headers) {
-				Cell cell = row.createCell(cellnum++);
-				String str = map.get(header) + "";
-				if (map.get(header) == null) {
-					str = " ";
-				}
-
-				if (str.contains("$")) {
-					cell.setCellValue(new Double(str.replace("$", "")));
-					cell.setCellType(Cell.CELL_TYPE_NUMERIC);
-				} else if (str.trim().matches("(\\d{1,2}/){2}\\d{4}")) {
-					CellStyle cellStyle = workbook.createCellStyle();
-					cellStyle.setDataFormat(createHelper.createDataFormat()
-							.getFormat("m/d/yyyy"));
-					try {
-						Date date = new java.text.SimpleDateFormat("MM/d/yyyy",
-								Locale.ENGLISH).parse(str);
-						cell.setCellValue(date);
-						cell.setCellStyle(cellStyle);
-					} catch (ParseException e) {
-						cell.setCellValue(str);
-					}
-
-				} else if (str.trim().matches("(\\d{1,2}/){1}\\d{4}")) {
-					CellStyle cellStyle = workbook.createCellStyle();
-					cellStyle.setDataFormat(createHelper.createDataFormat()
-							.getFormat("m/yyyy"));
-					try {
-						Date date = new java.text.SimpleDateFormat("MM/yyyy",
-								Locale.ENGLISH).parse(str);
-						cell.setCellValue(date);
-						cell.setCellStyle(cellStyle);
-					} catch (ParseException e) {
-						cell.setCellValue(str);
-					}
-
-				} else {
-					cell.setCellValue(str);
-				}
-				// out.print(str.replace(",", "") + ",\t");
-			}
-			// out.println();
-		}
-
-		try {
-			File file = new File(filename);
-			file.getParentFile().mkdirs();
-			FileOutputStream out = new FileOutputStream(file);
-			workbook.write(out);
-			out.close();
-		} catch (FileNotFoundException e) {
-			// e.printStackTrace();
-		} catch (IOException e) {
-			// e.printStackTrace();
-		}
-	}
-
-	public static synchronized void writeXML(String filename, List<String> rows) {
-		try {
-			File file = new File(filename);
-			file.getParentFile().mkdirs();
-			PrintStream out = new PrintStream(file);
-			out.println("<xml>");
-			out.println("    <table>");
-			boolean headers = true;
-			for (String rowdata : rows) {
-				String[] obj = rowdata.split(",");
-				out.println("      <tr>");
-				for (String s : obj) {
-					if (headers) {
-						out.println("        <th>" + s + "</th>");
-					} else {
-						out.println("        <td>" + s + "</td>");
-					}
-				}
-				out.println("      </tr>");
-				headers = false;
-			}
-			out.println("    </table>");
-			out.println("</xml>");
-			// workbook.write(out);
-			out.close();
-		} catch (FileNotFoundException e) {
-			// e.printStackTrace();
-		}
-	}
-
-	public static synchronized <U, T> void writeXMLRows(String filename,
-			Collection<Map<U, T>> rows) {
-		try {
-			File file = new File(filename);
-			file.getParentFile().mkdirs();
-			PrintStream out = new PrintStream(file);
-			out.println("<xml>");
-			out.println("    <table class='dataTable'>");
-
-			Set<U> headers = new HashSet<U>();
-
-			// Collect header information
-			for (Map<U, T> map : rows) {
-				headers.addAll(map.keySet());
-			}
-
-			// Print header information
-			out.println("      <thead><tr>");
-			for (U header : headers) {
-				// out.print(header.replace(",", "") + ",\t");
-				out.println("        <th>" + header + "</th>");
-			}
-			out.println("      </tr></thead>");
-
-			// Print rows
-			out.println("      <tbody>");
-			for (Map<U, T> map : rows) {
-				out.println("          <tr>");
-				for (U header : headers) {
-					String str = map.get(header) + "";
-					if (map.get(header) == null) {
-						str = " ";
-					}
-					// out.print(str.replace(",", "") + ",\t");
-					out.print("        <td class=\"" + header + "\">" + str
-							+ "</td>");
-				}
-				out.println("          </tr>");
-				out.println();
-			}
-			out.println("      </tbody>");
-			out.println("    </table>");
-			out.println("</xml>");
-			// workbook.write(out);
-			out.close();
-		} catch (FileNotFoundException e) {
-			// e.printStackTrace();
-		}
-	}
-
-	private boolean doFtp = false, doXml = false, doXlsx = false,
-			doHtml = false, doCsv = true;
+	private boolean doFtp = false, doXml = false, doXlsx = true, doHtml = true,
+			doCsv = true;
 	private final boolean dosql = false;
 	private String drivername = "firefox";
 	private String ftpDirectory = null;
@@ -567,8 +167,9 @@ public class CDBabySalesDataCrawler extends Thread {
 	}
 
 	private boolean doCrawl() {
-		return this.isDoCsv() | this.isDoHtml() | this.isDoXlsx()
-				| this.isDoXlsx();
+		return this.startpage.startsWith("http")
+				&& (this.isDoCsv() || this.isDoHtml() || this.isDoXlsx() || this
+						.isDoXlsx());
 	}
 
 	public String getDirPrefix() {
@@ -863,6 +464,8 @@ public class CDBabySalesDataCrawler extends Thread {
 	@Override
 	public void run() {
 
+		Table completeData = new Table();
+
 		if (this.doCrawl()) {
 			// org.apache.log4j.BasicConfigurator.configure();
 			org.apache.log4j.BasicConfigurator.configure(new NullAppender());
@@ -969,7 +572,6 @@ public class CDBabySalesDataCrawler extends Thread {
 					// }
 
 					ArrayList<Integer> visited = new ArrayList<Integer>();
-					List<Map<String, String>> completeData = new ArrayList<Map<String, String>>();
 					while (true) {
 
 						String albumTitle = "";
@@ -1093,7 +695,7 @@ public class CDBabySalesDataCrawler extends Thread {
 								}
 							}
 
-							List<Map<String, String>> data = new ArrayList<Map<String, String>>();
+							Table data = new Table();
 
 							int current = 0;
 							for (String src : seen) {
@@ -1138,7 +740,7 @@ public class CDBabySalesDataCrawler extends Thread {
 												"(?is).*PAGE TOTAL.*")) {
 											continue;
 										}
-										Map<String, String> row = new HashMap<String, String>();
+										Row row = new Row();
 
 										// Add revenue type field
 										row.put("REVENUETYPE",
@@ -1250,10 +852,10 @@ public class CDBabySalesDataCrawler extends Thread {
 							}
 
 							// System.out.println("");
-							this.writeOutputs(
-									this.getOutputDirectory() + albumTitle
-											+ File.separator + revenueType,
-									data);
+							// this.writeOutputs(
+							// this.getOutputDirectory() + albumTitle
+							// + File.separator + revenueType,
+							// data);
 
 							// driver.get(arg0)
 							driver.findElement(By.partialLinkText("overview"))
@@ -1269,98 +871,6 @@ public class CDBabySalesDataCrawler extends Thread {
 						}
 					}
 
-					if (this.dosql) {
-						// FINISH THIS SECTION....
-					}
-
-					System.out.println("this is a test");
-
-					this.writeOutputs(this.getOutputDirectory() + "Complete",
-							completeData);
-
-					this.writeOutputs(this.getOutputDirectory() + "ByPartner",
-							CDBabySalesDataCrawler.sum(CDBabySalesDataCrawler
-									.groupBy(completeData, "PARTNER"),
-									"PAYABLE"));
-
-					this.writeOutputs(this.getOutputDirectory() + "ByAlbum",
-							CDBabySalesDataCrawler.sum(CDBabySalesDataCrawler
-									.groupBy(completeData, "ALBUM"), "PAYABLE"));
-
-					this.writeOutputs(
-							this.getOutputDirectory() + "ByArtist",
-							CDBabySalesDataCrawler.sum(CDBabySalesDataCrawler
-									.groupBy(completeData, "ARTIST"), "PAYABLE"));
-
-					this.writeOutputs(this.getOutputDirectory() + "BySong",
-							CDBabySalesDataCrawler.sum(CDBabySalesDataCrawler
-									.groupBy(completeData, "ALBUM", "ARTIST",
-											"SONG"), "PAYABLE"));
-
-					this.writeOutputs(this.getOutputDirectory() + "BySaleDate",
-							CDBabySalesDataCrawler.sum(CDBabySalesDataCrawler
-									.groupBy(completeData, "SALEDATE"),
-									"PAYABLE"));
-
-					/*
-					 * //
-					 * ///////////////////////////////////////////////////////
-					 * ////// // Now lets compute some totals... //
-					 * /////////////
-					 * ////////////////////////////////////////////////
-					 * Map<String, Double> albums = new HashMap<String,
-					 * Double>(); Map<String, Double> partners = new
-					 * HashMap<String, Double>(); Map<String, Double> artists =
-					 * new HashMap<String, Double>(); Map<String, Double> songs
-					 * = new HashMap<String, Double>(); Map<String, Double>
-					 * dates = new HashMap<String, Double>();
-					 * 
-					 * for (Map<String, String> row : els.values()) { try {
-					 * String date = row.get("DATE"); if (date == null ||
-					 * date.isEmpty()) { date = row.get("SALES"); } // int year
-					 * = //
-					 * Integer.parseInt(date.substring(date.length()-4,date.
-					 * length())); double payable = Double.parseDouble(row
-					 * .get("PAYABLE")); String albumTitle =
-					 * row.get("albumTitle"); String partner =
-					 * row.get("PARTNER"); String song = row.get("SONG"); String
-					 * artist = row.get("ARTIST");
-					 * 
-					 * if (albums.containsKey(albumTitle)) {
-					 * albums.put(albumTitle, payable + albums.get(albumTitle));
-					 * } else { albums.put(albumTitle, payable); }
-					 * 
-					 * if (partners.containsKey(partner)) {
-					 * partners.put(partner, payable + partners.get(partner)); }
-					 * else { partners.put(partner, payable); }
-					 * 
-					 * if (artists.containsKey(artist)) { artists.put(artist,
-					 * payable + artists.get(partner)); } else {
-					 * artists.put(artist, payable); }
-					 * 
-					 * if (songs.containsKey(song)) { songs.put(song, payable +
-					 * songs.get(song)); } else { songs.put(song, payable); }
-					 * 
-					 * if (dates.containsKey(date)) { dates.put(date, payable +
-					 * songs.get(date)); } else { dates.put(date, payable); }
-					 * 
-					 * } catch (Exception oops) {
-					 * 
-					 * } }
-					 * 
-					 * 
-					 * this.writeOutputs( this.getOutputDirectory() +
-					 * "albumTotals", albums);
-					 * this.writeOutputs(this.getOutputDirectory() +
-					 * "artistTotals", artists);
-					 * this.writeOutputs(this.getOutputDirectory() +
-					 * "partnerTotals", partners);
-					 * this.writeOutputs(this.getOutputDirectory() +
-					 * "songTotals", songs);
-					 * this.writeOutputs(this.getOutputDirectory() +
-					 * "dateTotals", dates);
-					 */
-
 				} catch (Exception ex) {
 					System.out.println("Exception Caught ... parsing aborted.");
 				}
@@ -1371,7 +881,86 @@ public class CDBabySalesDataCrawler extends Thread {
 			} else {
 				System.out.print("Could not instantiate web driver object");
 			}
+		} else {
+			try {
+				File f = new File(this.getStartpage());
+				if (f.exists() && f.getName().endsWith(".csv")) {
+					// Load completeData from CSV
+					Scanner scanner = new Scanner(f);
+					ArrayList<String> headers = new ArrayList<String>();
+					while (scanner.hasNextLine()) {
+						String[] tokens = scanner.nextLine().split("\\s*,\\s*");
+						if (headers.isEmpty()) {
+							for (String token : tokens) {
+								headers.add(token);
+							}
+						} else {
+							Row row = new Row();
+							for (int i = 0; i < tokens.length; i++) {
+								String key = headers.get(i);
+								String value = tokens[i];
+								row.put(key, value);
+							}
+							completeData.add(row);
+						}
+					}
+					scanner.close();
+
+				} else if (f.exists() && f.getName().endsWith(".json")) {
+					// Load from JSON
+				}
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
 		}
+
+		try {
+
+			System.out.println("Writing output ... ");
+
+			String[] totals = { "SALEDATE-MS1970", "PAYABLE" };
+			String[] byArtist = { "SALEDATE-MS1970", "PAYABLE", "ARTIST" };
+			String[] byAlbum = { "SALEDATE-MS1970", "PAYABLE", "ALBUM" };
+			// String[] byPartner = { "SALEDATE-MS1970", "PAYABLE", "PARTNER" };
+			String[] artists = { "ARTIST", "PAYABLE", "TYPE=PIE" };
+			String[] albums = { "ALBUM", "PAYABLE", "TYPE=PIE" };
+			String[] partners = { "PARTNER", "PAYABLE", "TYPE=PIE" };
+
+			this.writeOutputs(this.getOutputDirectory() + "Complete",
+					completeData, artists, albums, partners, totals, byArtist,
+					byAlbum);
+
+			Map<String, Table> grouped = completeData.groupBy("PARTNER");
+			for (Entry<String, Table> entry : grouped.entrySet()) {
+				this.writeOutputs(this.getOutputDirectory() + "byPartner"
+						+ File.separator + entry.getKey(), entry.getValue(),
+						totals);
+			}
+
+			grouped = completeData.groupBy("ALBUM");
+			for (Entry<String, Table> entry : grouped.entrySet()) {
+				this.writeOutputs(this.getOutputDirectory() + "byAlbum"
+						+ File.separator + entry.getKey(), entry.getValue(),
+						totals);
+			}
+
+			grouped = completeData.groupBy("ARTIST");
+			for (Entry<String, Table> entry : grouped.entrySet()) {
+				this.writeOutputs(this.getOutputDirectory() + "byArtist"
+						+ File.separator + entry.getKey(), entry.getValue(),
+						totals);
+			}
+
+			grouped = completeData.groupBy("ALBUM", "ARTIST", "SONG");
+			for (Entry<String, Table> entry : grouped.entrySet()) {
+				this.writeOutputs(this.getOutputDirectory() + "bySong"
+						+ File.separator + entry.getKey(), entry.getValue(),
+						totals);
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+
 		if (this.isDoFtp()) {
 			for (int i = 0; i < 3; i++) {
 				try {
@@ -1582,52 +1171,30 @@ public class CDBabySalesDataCrawler extends Thread {
 		this.username = username;
 	}
 
-	public <U, T> void writeOutputs(String filename, Collection<Map<U, T>> rows) {
+	public void writeOutputs(String filename, Table table, String[]... plotArgs) {
 		System.out.print(">>Writing outputs for "
 				+ new File(filename).getName() + "\n");
 		System.out.flush();
 
 		if (this.doXml) {
-			CDBabySalesDataCrawler.writeXMLRows(filename + ".xml", rows);
-		}
-
-		if (this.doHtml) {
-			CDBabySalesDataCrawler.writeHTMLRows(filename + ".html", rows);
+			table.writeXML(filename + ".xml");
 		}
 
 		if (this.doCsv) {
-			CDBabySalesDataCrawler.writeCSVRows(filename + ".csv", rows);
+			table.writeCSV(filename + ".csv");
 		}
 
 		if (this.doXlsx) {
-			CDBabySalesDataCrawler.writeXLSXRows(filename + ".xlsx",
-					"Complete", rows);
+			table.writeXLSX(filename + ".xlsx", "sheet1");
 		}
-	}
 
-	public <U, T> void writeOutputs(String filename, Collection<U> x,
-			Collection<T> y) {
-		this.writeOutputs(filename, x.toArray(), y.toArray());
-	}
-
-	public <U, T> void writeOutputs(String filename, Map<U, T> map) {
-		ArrayList<U> keys = new ArrayList<U>();
-		ArrayList<T> values = new ArrayList<T>();
-		for (Entry<U, T> entry : map.entrySet()) {
-			keys.add(entry.getKey());
-			values.add(entry.getValue());
+		if (this.dosql) {
+			// FINISH THIS SECTION....
 		}
-		this.writeOutputs(filename, keys, values);
-	}
 
-	public <U, T> void writeOutputs(String filename, U[] x, T[] y) {
-		List<Map<U, T>> data = new ArrayList<Map<U, T>>();
-		Map<U, T> map = new HashMap<U, T>();
-		for (int i = 0; i < x.length; i++) {
-			map.put(x[i], y[i]);
+		if (this.doHtml) {
+			table.writeHTML(filename + ".html", plotArgs);
 		}
-		data.add(map);
-		this.writeOutputs(filename, data);
 	}
 
 }
