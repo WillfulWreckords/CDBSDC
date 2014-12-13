@@ -199,7 +199,7 @@ public class CDBabySalesDataCrawlerUI {
 
 	}
 
-	private static String getVersion() {
+	static String getVersion() {
 		return CDBabySalesDataCrawlerUI.version;
 	}
 
@@ -733,7 +733,7 @@ public class CDBabySalesDataCrawlerUI {
 		userPrefs.put("startpage", CDBabySalesDataCrawlerUI.startPage);
 	}
 
-	private static void setVersion(String version) {
+	static void setVersion(String version) {
 		CDBabySalesDataCrawlerUI.version = version;
 	}
 

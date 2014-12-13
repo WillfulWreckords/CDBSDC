@@ -29,9 +29,9 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.firefox.FirefoxDriver;
 
-import datamodels.Row;
-import datamodels.Table;
-import datamodels.TimeStamp;
+import com.wwrkds.datamodels.Row;
+import com.wwrkds.datamodels.Table;
+import com.wwrkds.datamodels.TimeStamp;
 
 /**
  * This is the web crawler implementation class for crawling the CDBaby site and

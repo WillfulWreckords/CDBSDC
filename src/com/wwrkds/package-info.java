@@ -1,9 +1,9 @@
 /**
- * --------------------------------------------------------------
- * --------------------------------------------------------------
- * CD Baby Sales Data Crawler (beta 1.0):
+ * <pre>
+ * CD Baby Sales Data Crawler Software:
  * 	Written by: Jonathan J. Lareau - Willful Wreckords, LLC
  * 	www.willfulwreckords.com
+ *  willfulwreckords@gmail.com
  * 
  * DISCLAIMER:
  * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESSED OR IMPLIED 
@@ -18,8 +18,7 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF 
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * --------------------------------------------------------------
- * --------------------------------------------------------------
+ * </pre>
  * 
  * @author Willful Wreckords, LLC
  * @see www.willfulwreckords.com
