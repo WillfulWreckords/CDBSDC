@@ -147,7 +147,6 @@ public class CDBabySalesDataCrawler extends Thread {
 		// com.wwrkds.CDBabySalesDataCrawler.class, "CDBSDC-ZIP",
 		// "http://willfulwreckords.com/Store/",
 		// "http://willfulwreckords.com/Software/license/");
-
 	}
 
 	public CDBabySalesDataCrawler(String u, String p, String d, String s) {
