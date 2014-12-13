@@ -13,6 +13,9 @@ multiple occasions but their development team has said that is not in
 any of their current or future development plans.  So until then, we will
 continue to use and update this software as necessary.
 
+To Run the GUI Application:
+>> java -jar bin/SalesDataCrawlerUI.jar
+
  CD Baby Sales Data Crawler Software:
  	Written by: Jonathan J. Lareau - Willful Wreckords, LLC
  	www.willfulwreckords.com
