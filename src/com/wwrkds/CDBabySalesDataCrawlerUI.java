@@ -28,6 +28,14 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
+/**
+ * This is the UI and main program for the Willful Wreckords, LLC CDBaby Sales
+ * Data Crawler Application for scraping the CDBaby website and downloading
+ * artists sales data.
+ * 
+ * @author jonlareau, Willful Wreckords, LLC - willfulwreckords@gmail.com
+ * 
+ */
 public class CDBabySalesDataCrawlerUI {
 
 	private static class DirListener implements ActionListener {
@@ -105,7 +113,7 @@ public class CDBabySalesDataCrawlerUI {
 			ftpUserField, ftpPassField, ftpDirField, startPageField,
 			ftpServerField, ftpPortField;
 
-	private static String version = "v1.0.7";
+	private static String version = "v1.0.8";
 
 	private static void getGUIFieldData() {
 
@@ -191,10 +199,13 @@ public class CDBabySalesDataCrawlerUI {
 
 	}
 
-	public static String getVersion() {
+	private static String getVersion() {
 		return CDBabySalesDataCrawlerUI.version;
 	}
 
+	/**
+	 * Instantiates a crawler, sets its parameters and starts it.
+	 */
 	private static void go() {
 
 		// Set the user preferences...
@@ -722,7 +733,7 @@ public class CDBabySalesDataCrawlerUI {
 		userPrefs.put("startpage", CDBabySalesDataCrawlerUI.startPage);
 	}
 
-	public static void setVersion(String version) {
+	private static void setVersion(String version) {
 		CDBabySalesDataCrawlerUI.version = version;
 	}
 

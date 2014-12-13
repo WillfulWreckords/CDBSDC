@@ -5,8 +5,6 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -35,9 +33,21 @@ import datamodels.Row;
 import datamodels.Table;
 import datamodels.TimeStamp;
 
+/**
+ * This is the web crawler implementation class for crawling the CDBaby site and
+ * downloading sales information. It is instantiated and called by the
+ * CDBabySalesDataCrawlerUI class
+ * 
+ * @author jonlareau, Willful Wreckords, LLC, willfulwreckords@gmail.com
+ * 
+ */
 public class CDBabySalesDataCrawler extends Thread {
 
 	/**
+	 * Main function for running the crawler as a command line program. Use the
+	 * "-h" option to print current help commands or see the {@see parseArgs}
+	 * javadocs.
+	 * 
 	 * @param args
 	 */
 	public static void main(String[] args) {
@@ -51,78 +61,6 @@ public class CDBabySalesDataCrawler extends Thread {
 			System.out
 					.println("There was an error when trying to run Crawler.");
 		}
-	}
-
-	/*
-	 * @SafeVarargs public static synchronized <U, T> Map<String, String> sum(
-	 * Collection<Map<U, T>> rows, U y, U... groupBy) { Set<U> gbs = new
-	 * LinkedHashSet<U>(); gbs.addAll(Arrays.asList(groupBy));
-	 * 
-	 * Map<String, String> output = new TreeMap<String, String>();
-	 * 
-	 * // Print rows for (Map<U, T> map : rows) { String group = ""; for (U g :
-	 * gbs) { T t = map.get(g); if (t != null) { group += t + " "; } } group =
-	 * group.trim();
-	 * 
-	 * String value = map.get(y) + ""; value = value.replace("$", "").trim(); if
-	 * (output.containsKey(group)) { try { double old =
-	 * Double.parseDouble(output.get(group)); double val =
-	 * Double.parseDouble(value); output.put(group, old + val + ""); } catch
-	 * (Exception e) { if (!output.get(group).trim().contains(value)) { String n
-	 * = output.get(group).trim() + " " + value; output.put(group, n.trim()); }
-	 * } } else { output.put(group, value.trim()); } } return output; }
-	 */
-
-	public static synchronized <U, T> String sum(Collection<Map<U, T>> rows,
-			U col) {
-
-		String output = "";
-
-		// Print rows
-		for (Map<U, T> map : rows) {
-			String value = map.get(col) + "";
-			try {
-				double old = output.isEmpty() ? 0.0 : Double
-						.parseDouble(output);
-				double val = Double.parseDouble(value.replace("$", "").trim());
-				output = old + val + "";
-			} catch (Exception e) {
-				String n = output.trim() + " " + value;
-				output = n.trim();
-
-			}
-		}
-		return output;
-	}
-
-	public static synchronized <U, T> Collection<Map<String, String>> sum(
-			Map<String, Collection<Map<U, T>>> groupedRows, U col) {
-		Map<String, String> res = new HashMap<String, String>();
-		for (Entry<String, Collection<Map<U, T>>> entry : groupedRows
-				.entrySet()) {
-			String group = entry.getKey();
-			Collection<Map<U, T>> rows = entry.getValue();
-			String value = CDBabySalesDataCrawler.sum(rows, col);
-
-			if (res.containsKey(group)) {
-				try {
-					double old = Double.parseDouble(res.get(group));
-					double val = Double.parseDouble(value);
-					res.put(group, old + val + "");
-				} catch (Exception e) {
-					if (!res.get(group).trim().contains(value)) {
-						String n = res.get(group).trim() + " " + value;
-						res.put(group, n.trim());
-					}
-				}
-			} else {
-				res.put(group, value.trim());
-			}
-		}
-
-		List<Map<String, String>> out = new ArrayList<Map<String, String>>();
-		out.add(res);
-		return out;
 	}
 
 	private boolean doFtp = false, doXml = false, doXlsx = true, doHtml = true,
@@ -142,13 +80,25 @@ public class CDBabySalesDataCrawler extends Thread {
 	private int timedelay = 15000;
 	private String username = null;
 
+	/**
+	 * Default Constructor
+	 */
 	private CDBabySalesDataCrawler() {
-		// LicenseManager manager = new LicenseManager(
-		// com.wwrkds.CDBabySalesDataCrawler.class, "CDBSDC-ZIP",
-		// "http://willfulwreckords.com/Store/",
-		// "http://willfulwreckords.com/Software/license/");
+
 	}
 
+	/**
+	 * Constructor
+	 * 
+	 * @param u
+	 *            username
+	 * @param p
+	 *            password
+	 * @param d
+	 *            output directory
+	 * @param s
+	 *            XLS sheet title default
+	 */
 	public CDBabySalesDataCrawler(String u, String p, String d, String s) {
 		this.setUsername(u);
 		this.setPassword(p);
@@ -156,6 +106,20 @@ public class CDBabySalesDataCrawler extends Thread {
 		this.setSheetTitle(s);
 	}
 
+	/**
+	 * Constructor
+	 * 
+	 * @param u
+	 *            username
+	 * @param p
+	 *            password
+	 * @param d
+	 *            output directory
+	 * @param s
+	 *            XLS sheet title default
+	 * @param t
+	 *            timeout
+	 */
 	public CDBabySalesDataCrawler(String u, String p, String d, String s,
 			int timeout) {
 		this.setUsername(u);
@@ -171,88 +135,162 @@ public class CDBabySalesDataCrawler extends Thread {
 						.isDoXlsx());
 	}
 
+	/**
+	 * Gets the output directory prefix
+	 * 
+	 * @return
+	 */
 	public String getDirPrefix() {
 		return this.getOutputDirectory();
 	}
 
+	/**
+	 * Gets the selenium webdriver name
+	 * 
+	 * @return
+	 */
 	public String getDrivername() {
 		return this.drivername;
 	}
 
+	/**
+	 * Gets the ftp directory variable
+	 * 
+	 * @return
+	 */
 	public String getFtpDirectory() {
 		return this.ftpDirectory;
 	}
 
+	/**
+	 * Gets the FTP password
+	 * 
+	 * @return
+	 */
 	public String getFtpPassword() {
 		return this.ftpPassword;
 	}
 
+	/**
+	 * gets the FTP port
+	 * 
+	 * @return
+	 */
 	public String getFtpPort() {
 		return this.ftpPort;
 	}
 
+	/**
+	 * Gets the FTP server
+	 * 
+	 * @return
+	 */
 	public String getFtpServer() {
 		return this.ftpServer;
 	}
 
+	/**
+	 * Gets the FTP username
+	 * 
+	 * @return
+	 */
 	public String getFtpUsername() {
 		return this.ftpUsername;
 	}
 
+	/**
+	 * Gets the output directory
+	 * 
+	 * @return
+	 */
 	public String getOutputDirectory() {
 		return this.outputDirectory;
 	}
 
+	/**
+	 * Gets the CDBaby password
+	 * 
+	 * @return
+	 */
 	public String getPassword() {
 		return this.password;
 	}
 
+	/**
+	 * Gets the XLS Sheet title variable
+	 * 
+	 * @return
+	 */
 	public String getSheetTitle() {
 		return this.sheetTitle;
 	}
 
+	/**
+	 * Gets the CDBaby start page url
+	 * 
+	 * @return
+	 */
 	public String getStartpage() {
 		return this.startpage;
 	}
 
+	/**
+	 * gets the time delay between clicks
+	 * 
+	 * @return
+	 */
 	public int getTimedelay() {
 		return this.timedelay;
 	}
 
+	/**
+	 * Gets the CDBaby username
+	 * 
+	 * @return
+	 */
 	public String getUsername() {
 		return this.username;
 	}
 
+	/**
+	 * 
+	 * @return
+	 */
 	public boolean isDoCsv() {
 		return this.doCsv;
 	}
 
+	/**
+	 * 
+	 * @return
+	 */
 	public boolean isDoFtp() {
 		return this.doFtp;
 	}
 
+	/**
+	 * 
+	 * @return
+	 */
 	public boolean isDoHtml() {
 		return this.doHtml;
 	}
 
+	/**
+	 * 
+	 * @return
+	 */
 	public boolean isDoXlsx() {
 		return this.doXlsx;
 	}
 
+	/**
+	 * 
+	 * @return
+	 */
 	public boolean isDoXml() {
 		return this.doXml;
 	}
-
-	// public org.w3c.dom.Document loadXMLFromString(String xml) throws
-	// Exception {
-	// DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-
-	// factory.setNamespaceAware(true);
-	// DocumentBuilder builder = factory.newDocumentBuilder();
-
-	// builder.parse(new InputSource(new StringReader(xml)));
-	// return builder.parse(new ByteArrayInputStream(xml.getBytes()));
-	// }
 
 	/**
 	 * <p>
@@ -278,76 +316,91 @@ public class CDBabySalesDataCrawler extends Thread {
 	 * </tr>
 	 * 
 	 * <tr>
+	 * <td>optional</td>
 	 * <td>-dohtml [true|false]</td>
 	 * <td></td>
 	 * </tr>
 	 * 
 	 * <tr>
+	 * <td>optional</td>
 	 * <td>-doxml [true|false]</td>
 	 * <td></td>
 	 * </tr>
 	 * 
 	 * <tr>
+	 * <td>optional</td>
 	 * <td>-docsv [true|false]</td>
 	 * <td></td>
 	 * </tr>
 	 * 
 	 * <tr>
+	 * <td>optional</td>
 	 * <td>-doxlsx [true|false]</td>
 	 * <td></td>
 	 * </tr>
 	 * 
 	 * <tr>
+	 * <td>optional</td>
 	 * <td>-doftp [true|false]</td>
 	 * <td></td>
 	 * </tr>
 	 * 
 	 * <tr>
+	 * <td>optional</td>
 	 * <td>-ftpusername string</td>
 	 * <td>string = The FTP username to use</td>
 	 * </tr>
 	 * 
 	 * <tr>
+	 * <td>optional</td>
 	 * <td>-ftppassword string</td>
 	 * <td>string = The FTP password to use</td>
 	 * </tr>
 	 * 
 	 * <tr>
+	 * <td>optional</td>
 	 * <td>-ftpserver string</td>
 	 * <td>string = The FTP server url to use</td>
 	 * </tr>
 	 * 
 	 * <tr>
+	 * <td>optional</td>
 	 * <td>-ftpport string</td>
 	 * <td>string = The FTP port to use</td>
 	 * </tr>
 	 * 
 	 * <tr>
+	 * <td>optional</td>
 	 * <td>-ftpdirectory string</td>
 	 * <td>string = The FTP directory to use</td>
 	 * </tr>
 	 * 
 	 * <tr>
+	 * <td>optional</td>
 	 * <td>-driver [(firefox) | chrome | safari | ie]</td>
 	 * <td>string = The WEBDriver to use to use</td>
 	 * </tr>
 	 * 
 	 * <tr>
+	 * <td>optional</td>
 	 * <td>-sheeetitle string</td>
 	 * <td>string = The Title of the xlsx sheet to use</td>
 	 * </tr>
 	 * 
 	 * <tr>
+	 * <td>optional</td>
 	 * <td>-startpage string</td>
 	 * <td>string = The url of the CDBaby login page</td>
 	 * </tr>
 	 * 
 	 * <tr>
+	 * <td>optional</td>
 	 * <td>-clickdelay string</td>
 	 * <td>string = The amount of click delay to use</td>
 	 * </tr>
 	 * 
 	 * <tr>
+	 * <td>optional</td>
 	 * <td>-h</td>
 	 * <td>Print help information</td>
 	 * </tr>
@@ -401,6 +454,9 @@ public class CDBabySalesDataCrawler extends Thread {
 		}
 	}
 
+	/**
+	 * Prints the help information to system.out
+	 */
 	public void printHelp() {
 		System.out
 				.print("*********************************************************************************************************************\n");
@@ -1086,91 +1142,182 @@ public class CDBabySalesDataCrawler extends Thread {
 
 	}
 
+	/**
+	 * 
+	 * @param docsv
+	 */
 	public void setDocsv(boolean docsv) {
 		this.doCsv = docsv;
 	}
 
+	/**
+	 * 
+	 * @param doCsv
+	 */
 	public void setDoCsv(boolean doCsv) {
 		this.doCsv = doCsv;
 	}
 
+	/**
+	 * 
+	 * @param doFtp
+	 */
 	public void setDoFtp(boolean doFtp) {
 		this.doFtp = doFtp;
 	}
 
+	/**
+	 * 
+	 * @param dohtml
+	 */
 	public void setDohtml(boolean dohtml) {
 		this.doHtml = dohtml;
 	}
 
+	/**
+	 * 
+	 * @param doHtml
+	 */
 	public void setDoHtml(boolean doHtml) {
 		this.doHtml = doHtml;
 	}
 
+	/**
+	 * 
+	 * @param doxlsx
+	 */
 	public void setDoxlsx(boolean doxlsx) {
 		this.doXlsx = doxlsx;
 	}
 
+	/**
+	 * 
+	 * @param doXlsx
+	 */
 	public void setDoXlsx(boolean doXlsx) {
 		this.doXlsx = doXlsx;
 	}
 
+	/**
+	 * 
+	 * @param doxml
+	 */
 	public void setDoxml(boolean doxml) {
 		this.doXml = doxml;
 	}
 
+	/**
+	 * 
+	 * @param doXml
+	 */
 	public void setDoXml(boolean doXml) {
 		this.doXml = doXml;
 	}
 
+	/**
+	 * 
+	 * @param drivername
+	 */
 	public void setDrivername(String drivername) {
 		this.drivername = drivername;
 	}
 
+	/**
+	 * 
+	 * @param ftpDirectory
+	 */
 	public void setFtpDirectory(String ftpDirectory) {
 		this.ftpDirectory = ftpDirectory;
 	}
 
+	/**
+	 * 
+	 * @param ftpPassword
+	 */
 	public void setFtpPassword(String ftpPassword) {
 		this.ftpPassword = ftpPassword;
 	}
 
+	/**
+	 * 
+	 * @param ftpPort
+	 */
 	public void setFtpPort(String ftpPort) {
 		this.ftpPort = ftpPort;
 	}
 
+	/**
+	 * 
+	 * @param ftpServer
+	 */
 	public void setFtpServer(String ftpServer) {
 		this.ftpServer = ftpServer;
 	}
 
+	/**
+	 * 
+	 * @param ftpUsername
+	 */
 	public void setFtpUsername(String ftpUsername) {
 		this.ftpUsername = ftpUsername;
 	}
 
+	/**
+	 * 
+	 * @param dirPrefix
+	 */
 	public void setOutputDirectory(String dirPrefix) {
 		this.outputDirectory = dirPrefix;
 	}
 
+	/**
+	 * 
+	 * @param password
+	 */
 	public void setPassword(String password) {
 		this.password = password;
 	}
 
+	/**
+	 * 
+	 * @param sheetTitle
+	 */
 	public void setSheetTitle(String sheetTitle) {
 		this.sheetTitle = sheetTitle;
 	}
 
+	/**
+	 * 
+	 * @param startpage
+	 */
 	public void setStartpage(String startpage) {
 		this.startpage = startpage;
 	}
 
+	/**
+	 * 
+	 * @param timedelay
+	 */
 	public void setTimedelay(int timedelay) {
 		this.timedelay = timedelay;
 	}
 
+	/**
+	 * 
+	 * @param username
+	 */
 	public void setUsername(String username) {
 		this.username = username;
 	}
 
-	public void writeOutputs(String filename, Table table, String[]... plotArgs) {
+	/**
+	 * 
+	 * @param filename
+	 * @param table
+	 * @param plotArgs
+	 */
+	private void writeOutputs(String filename, Table table,
+			String[]... plotArgs) {
 		System.out.print(">>Writing outputs for "
 				+ new File(filename).getName() + "\n");
 		System.out.flush();

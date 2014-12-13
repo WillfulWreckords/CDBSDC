@@ -41,9 +41,30 @@ import com.googlecode.charts4j.PieChart;
 import com.googlecode.charts4j.Plots;
 import com.googlecode.charts4j.Slice;
 import com.googlecode.charts4j.XYLine;
-import com.wwrkds.CDBabySalesDataCrawler;
 
 public class Table implements List<Row> {
+
+	public static synchronized <U, T> String sum(Collection<Map<U, T>> rows,
+			U col) {
+
+		String output = "";
+
+		// Print rows
+		for (Map<U, T> map : rows) {
+			String value = map.get(col) + "";
+			try {
+				double old = output.isEmpty() ? 0.0 : Double
+						.parseDouble(output);
+				double val = Double.parseDouble(value.replace("$", "").trim());
+				output = old + val + "";
+			} catch (Exception e) {
+				String n = output.trim() + " " + value;
+				output = n.trim();
+
+			}
+		}
+		return output;
+	}
 
 	public static synchronized <U, T> Collection<Map<String, String>> sum(
 			Map<String, Collection<Map<U, T>>> groupedRows, U col) {
@@ -52,7 +73,7 @@ public class Table implements List<Row> {
 				.entrySet()) {
 			String group = entry.getKey();
 			Collection<Map<U, T>> rows = entry.getValue();
-			String value = CDBabySalesDataCrawler.sum(rows, col);
+			String value = Table.sum(rows, col);
 
 			if (res.containsKey(group)) {
 				try {
