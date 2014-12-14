@@ -1,7 +1,7 @@
 CDBSDC
 ======
 
-CDBaby Sales Data Crawler - This JAVA application and is used to 
+CDBaby Sales Data Crawler - This Eclipse JAVA application is used to 
 autmatically login to a CDBaby artist account and web crawl and download 
 all of the account sales data. This software was built because CDBaby 
 has no way for automatic machine to machine communication/retrieval of 
