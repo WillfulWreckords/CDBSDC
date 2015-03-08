@@ -569,10 +569,11 @@ public class Table implements List<Row> {
 			if (cols != null) {
 				for (String key : cols) {
 					if (row.get(key) != null) {
-						group += row.get(key) + "";
+						group += row.get(key) + " ";
 					}
 				}
 			}
+			group = group.trim();
 			if (!groups.containsKey(group)) {
 				groups.put(group, new Table());
 			}
