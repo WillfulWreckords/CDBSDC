@@ -236,10 +236,10 @@ public class CDBabySalesDataCrawlerUI {
 					CDBabySalesDataCrawlerUI.username,
 					CDBabySalesDataCrawlerUI.password, directory,
 					"CD Baby Sales Data", to);
-			crawler.setDocsv(CDBabySalesDataCrawlerUI.docsv);
-			crawler.setDoxml(CDBabySalesDataCrawlerUI.doxml);
-			crawler.setDohtml(CDBabySalesDataCrawlerUI.dohtml);
-			crawler.setDoxlsx(CDBabySalesDataCrawlerUI.doxlsx);
+			crawler.setDoCsv(CDBabySalesDataCrawlerUI.docsv);
+			crawler.setDoXml(CDBabySalesDataCrawlerUI.doxml);
+			crawler.setDoHtml(CDBabySalesDataCrawlerUI.dohtml);
+			crawler.setDoXlsx(CDBabySalesDataCrawlerUI.doxlsx);
 			crawler.setDoFtp(CDBabySalesDataCrawlerUI.doftp);
 			crawler.setFtpServer(CDBabySalesDataCrawlerUI.ftpServer);
 			crawler.setFtpPort(CDBabySalesDataCrawlerUI.ftpPort);
@@ -248,11 +248,8 @@ public class CDBabySalesDataCrawlerUI {
 			crawler.setFtpPassword(CDBabySalesDataCrawlerUI.ftpPassword);
 			crawler.setDrivername(CDBabySalesDataCrawlerUI.browser);
 			crawler.setStartpage(CDBabySalesDataCrawlerUI.startPage);
-			crawler.run();
-
-			if (CDBabySalesDataCrawlerUI.exitAfterFinish) {
-				System.exit(0);
-			}
+			crawler.setExitAfterFinish(CDBabySalesDataCrawlerUI.exitAfterFinish);
+			crawler.start();
 
 		} else {
 			System.out.print("Error: username and password must be defined.\n");
