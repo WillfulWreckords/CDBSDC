@@ -98,7 +98,8 @@ public class CDBabySalesDataCrawlerUI {
 			ftpServer = null,
 			startPage = "https://members.cdbaby.com/Login.aspx";
 	private static boolean docsv = false, doxml = false, doxlsx = false,
-			dohtml = true, doftp = false, orgByDate = true;
+			dohtml = true, doftp = false, orgByDate = false,
+			exitAfterFinish = true;
 	private static JCheckBox docsvBox, dohtmlBox, doxlsxBox, doxmlBox,
 			doftpBox, orgByDateBox;
 	private static JButton fbtn1;
@@ -192,7 +193,7 @@ public class CDBabySalesDataCrawlerUI {
 		CDBabySalesDataCrawlerUI.doftp = Boolean.parseBoolean(userPrefs.get(
 				"doftp", "false"));
 		CDBabySalesDataCrawlerUI.orgByDate = Boolean.parseBoolean(userPrefs
-				.get("orgByDate", "true"));
+				.get("orgByDate", "false"));
 		CDBabySalesDataCrawlerUI.browser = userPrefs.get("browser", "firefox");
 		// CDBabySalesDataCrawlerUI.startPage = userPrefs.get("startpage",
 		// "https://members.cdbaby.com/Login.aspx");
@@ -247,7 +248,11 @@ public class CDBabySalesDataCrawlerUI {
 			crawler.setFtpPassword(CDBabySalesDataCrawlerUI.ftpPassword);
 			crawler.setDrivername(CDBabySalesDataCrawlerUI.browser);
 			crawler.setStartpage(CDBabySalesDataCrawlerUI.startPage);
-			crawler.start();
+			crawler.run();
+
+			if (CDBabySalesDataCrawlerUI.exitAfterFinish) {
+				System.exit(0);
+			}
 
 		} else {
 			System.out.print("Error: username and password must be defined.\n");
@@ -731,6 +736,7 @@ public class CDBabySalesDataCrawlerUI {
 		userPrefs.put("doftp", "" + CDBabySalesDataCrawlerUI.doftp);
 		userPrefs.put("browser", CDBabySalesDataCrawlerUI.browser);
 		userPrefs.put("startpage", CDBabySalesDataCrawlerUI.startPage);
+		userPrefs.put("orgByDate", "" + CDBabySalesDataCrawlerUI.orgByDate);
 	}
 
 	static void setVersion(String version) {
