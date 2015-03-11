@@ -29,6 +29,7 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.firefox.FirefoxDriver;
 
+import com.wwrkds.datamodels.RankingOrder;
 import com.wwrkds.datamodels.Row;
 import com.wwrkds.datamodels.Table;
 import com.wwrkds.datamodels.TimeStamp;
@@ -67,6 +68,7 @@ public class CDBabySalesDataCrawler extends Thread {
 			doCsv = true;
 	private final boolean dosql = false;
 	private String drivername = "firefox";
+	private boolean exitAfterFinish = true;
 	private String ftpDirectory = null;
 	private String ftpPassword = null;
 	private String ftpPort = null;
@@ -76,7 +78,6 @@ public class CDBabySalesDataCrawler extends Thread {
 	private String password = null;
 	private String sheetTitle = "CDBaby Sales Data";
 	private String startpage = "https://members.cdbaby.com/Login.aspx";
-
 	private int timedelay = 15000;
 	private String username = null;
 
@@ -136,388 +137,12 @@ public class CDBabySalesDataCrawler extends Thread {
 	}
 
 	/**
-	 * Gets the output directory prefix
+	 * This is the function that dows the meat of the data collection / scapring
+	 * from the CDBaby web content
 	 * 
 	 * @return
 	 */
-	public String getDirPrefix() {
-		return this.getOutputDirectory();
-	}
-
-	/**
-	 * Gets the selenium webdriver name
-	 * 
-	 * @return
-	 */
-	public String getDrivername() {
-		return this.drivername;
-	}
-
-	/**
-	 * Gets the ftp directory variable
-	 * 
-	 * @return
-	 */
-	public String getFtpDirectory() {
-		return this.ftpDirectory;
-	}
-
-	/**
-	 * Gets the FTP password
-	 * 
-	 * @return
-	 */
-	public String getFtpPassword() {
-		return this.ftpPassword;
-	}
-
-	/**
-	 * gets the FTP port
-	 * 
-	 * @return
-	 */
-	public String getFtpPort() {
-		return this.ftpPort;
-	}
-
-	/**
-	 * Gets the FTP server
-	 * 
-	 * @return
-	 */
-	public String getFtpServer() {
-		return this.ftpServer;
-	}
-
-	/**
-	 * Gets the FTP username
-	 * 
-	 * @return
-	 */
-	public String getFtpUsername() {
-		return this.ftpUsername;
-	}
-
-	/**
-	 * Gets the output directory
-	 * 
-	 * @return
-	 */
-	public String getOutputDirectory() {
-		return this.outputDirectory;
-	}
-
-	/**
-	 * Gets the CDBaby password
-	 * 
-	 * @return
-	 */
-	public String getPassword() {
-		return this.password;
-	}
-
-	/**
-	 * Gets the XLS Sheet title variable
-	 * 
-	 * @return
-	 */
-	public String getSheetTitle() {
-		return this.sheetTitle;
-	}
-
-	/**
-	 * Gets the CDBaby start page url
-	 * 
-	 * @return
-	 */
-	public String getStartpage() {
-		return this.startpage;
-	}
-
-	/**
-	 * gets the time delay between clicks
-	 * 
-	 * @return
-	 */
-	public int getTimedelay() {
-		return this.timedelay;
-	}
-
-	/**
-	 * Gets the CDBaby username
-	 * 
-	 * @return
-	 */
-	public String getUsername() {
-		return this.username;
-	}
-
-	/**
-	 * 
-	 * @return
-	 */
-	public boolean isDoCsv() {
-		return this.doCsv;
-	}
-
-	/**
-	 * 
-	 * @return
-	 */
-	public boolean isDoFtp() {
-		return this.doFtp;
-	}
-
-	/**
-	 * 
-	 * @return
-	 */
-	public boolean isDoHtml() {
-		return this.doHtml;
-	}
-
-	/**
-	 * 
-	 * @return
-	 */
-	public boolean isDoXlsx() {
-		return this.doXlsx;
-	}
-
-	/**
-	 * 
-	 * @return
-	 */
-	public boolean isDoXml() {
-		return this.doXml;
-	}
-
-	/**
-	 * <p>
-	 * Accepted arguments
-	 * </p>
-	 * <table border=1>
-	 * <tr>
-	 * <td>required</td>
-	 * <td>[-username | -u] string</td>
-	 * <td>string = The CD Baby Account username to use</td>
-	 * </tr>
-	 * 
-	 * <tr>
-	 * <td>required</td>
-	 * <td>[-password | -p] string</td>
-	 * <td>string = The CD Baby Account Password to use</td>
-	 * </tr>
-	 * 
-	 * <tr>
-	 * <td>required</td>
-	 * <td>-outdir string</td>
-	 * <td>string = The output directory to place completed files</td>
-	 * </tr>
-	 * 
-	 * <tr>
-	 * <td>optional</td>
-	 * <td>-dohtml [true|false]</td>
-	 * <td></td>
-	 * </tr>
-	 * 
-	 * <tr>
-	 * <td>optional</td>
-	 * <td>-doxml [true|false]</td>
-	 * <td></td>
-	 * </tr>
-	 * 
-	 * <tr>
-	 * <td>optional</td>
-	 * <td>-docsv [true|false]</td>
-	 * <td></td>
-	 * </tr>
-	 * 
-	 * <tr>
-	 * <td>optional</td>
-	 * <td>-doxlsx [true|false]</td>
-	 * <td></td>
-	 * </tr>
-	 * 
-	 * <tr>
-	 * <td>optional</td>
-	 * <td>-doftp [true|false]</td>
-	 * <td></td>
-	 * </tr>
-	 * 
-	 * <tr>
-	 * <td>optional</td>
-	 * <td>-ftpusername string</td>
-	 * <td>string = The FTP username to use</td>
-	 * </tr>
-	 * 
-	 * <tr>
-	 * <td>optional</td>
-	 * <td>-ftppassword string</td>
-	 * <td>string = The FTP password to use</td>
-	 * </tr>
-	 * 
-	 * <tr>
-	 * <td>optional</td>
-	 * <td>-ftpserver string</td>
-	 * <td>string = The FTP server url to use</td>
-	 * </tr>
-	 * 
-	 * <tr>
-	 * <td>optional</td>
-	 * <td>-ftpport string</td>
-	 * <td>string = The FTP port to use</td>
-	 * </tr>
-	 * 
-	 * <tr>
-	 * <td>optional</td>
-	 * <td>-ftpdirectory string</td>
-	 * <td>string = The FTP directory to use</td>
-	 * </tr>
-	 * 
-	 * <tr>
-	 * <td>optional</td>
-	 * <td>-driver [(firefox) | chrome | safari | ie]</td>
-	 * <td>string = The WEBDriver to use to use</td>
-	 * </tr>
-	 * 
-	 * <tr>
-	 * <td>optional</td>
-	 * <td>-sheeetitle string</td>
-	 * <td>string = The Title of the xlsx sheet to use</td>
-	 * </tr>
-	 * 
-	 * <tr>
-	 * <td>optional</td>
-	 * <td>-startpage string</td>
-	 * <td>string = The url of the CDBaby login page</td>
-	 * </tr>
-	 * 
-	 * <tr>
-	 * <td>optional</td>
-	 * <td>-clickdelay string</td>
-	 * <td>string = The amount of click delay to use</td>
-	 * </tr>
-	 * 
-	 * <tr>
-	 * <td>optional</td>
-	 * <td>-h</td>
-	 * <td>Print help information</td>
-	 * </tr>
-	 * 
-	 * </table>
-	 * 
-	 * @param args
-	 */
-	public void parseArgs(String[] args) {
-
-		for (int i = 0; i < args.length; i++) {
-			if (args[i].toLowerCase().contentEquals("-username")
-					|| args[i].toLowerCase().contentEquals("-u")) {
-				this.setUsername(args[++i]);
-			} else if (args[i].toLowerCase().contentEquals("-password")
-					|| args[i].toLowerCase().contentEquals("-p")) {
-				this.setPassword(args[++i]);
-			} else if (args[i].toLowerCase().contentEquals("-outdir")) {
-				this.setOutputDirectory(args[++i]);
-			} else if (args[i].toLowerCase().contentEquals("-dohtml")) {
-				this.setDohtml(Boolean.parseBoolean(args[++i]));
-			} else if (args[i].toLowerCase().contentEquals("-doxml")) {
-				this.setDoxml(Boolean.parseBoolean(args[++i]));
-			} else if (args[i].toLowerCase().contentEquals("-doxlsx")) {
-				this.setDoxlsx(Boolean.parseBoolean(args[++i]));
-			} else if (args[i].toLowerCase().contentEquals("-docsv")) {
-				this.setDocsv(Boolean.parseBoolean(args[++i]));
-			} else if (args[i].toLowerCase().contentEquals("-doftp")) {
-				this.setDoFtp(Boolean.parseBoolean(args[++i]));
-			} else if (args[i].toLowerCase().contentEquals("-ftpusername")) {
-				this.setFtpUsername(args[++i]);
-			} else if (args[i].toLowerCase().contentEquals("-ftppassword")) {
-				this.setFtpPassword(args[++i]);
-			} else if (args[i].toLowerCase().contentEquals("-ftpserver")) {
-				this.setFtpServer(args[++i]);
-			} else if (args[i].toLowerCase().contentEquals("-ftpport")) {
-				this.setFtpPort(args[++i]);
-			} else if (args[i].toLowerCase().contentEquals("-ftpdirectory")) {
-				this.setFtpDirectory(args[++i]);
-			} else if (args[i].toLowerCase().contentEquals("-driver")) {
-				this.setDrivername(args[++i]);
-			} else if (args[i].toLowerCase().contentEquals("-sheettitle")) {
-				this.setSheetTitle(args[++i]);
-			} else if (args[i].toLowerCase().contentEquals("-startpage")) {
-				this.setStartpage(args[++i]);
-			} else if (args[i].toLowerCase().contentEquals("-clickdelay")) {
-				this.setTimedelay(Integer.parseInt(args[++i]));
-			} else if (args[i].toLowerCase().contentEquals("-h")) {
-				this.printHelp();
-			}
-		}
-	}
-
-	/**
-	 * Prints the help information to system.out
-	 */
-	public void printHelp() {
-		System.out
-				.print("*********************************************************************************************************************\n");
-		System.out
-				.print("*********************************************************************************************************************\n");
-		System.out.print("CD Baby Sales Data Crawler ("
-				+ CDBabySalesDataCrawlerUI.getVersion() + "):\n");
-		System.out
-				.print("\tWritten by: Jonathan J. Lareau - Willful Wreckords, LLC\n\twww.willfulwreckords.com\n\n");
-		System.out
-				.print("DISCLAIMER:\n\tTHIS SOFTWARE IS PROVIDED \"AS IS\" AND WITHOUT ANY EXPRESSED OR IMPLIED WARRANTIES.\n");
-		System.out
-				.print("*********************************************************************************************************************\n");
-		System.out
-				.print("*********************************************************************************************************************\n");
-		System.out.print("\n");
-
-		System.out
-				.print("PRE_REQUISITES: This software requires that a HTML5 compliant version of Mozilla Firefox, Chrome, IE or Safari "
-						+ "be installed on your system with a \"standard\" vendor install.\n\n");
-		System.out
-				.print("This program is a web-crawler that automates the process of logging "
-						+ "into your CD Baby account and "
-						+ "scraping your sales data for each project "
-						+ "listing that is available in the Accounting Overview pages.\n\n");
-		System.out
-				.print("A new browser window will be opened so the crawler can operate, which "
-						+ "will take a few moments to launch.  Once launched please do not click "
-						+ "inside or make adjustments to this new browser window while the crawler "
-						+ "is running. When the crawler completes it will automatically close this window. \n\n");
-
-		System.out.println("Parameters:");
-		System.out.println("\t-username <CDBaby username> : sets username");
-		System.out.println("\t-password <CDBaby password> : sets password");
-		System.out
-				.println("\t-driver [firefox | chrome | safari | ie] : sets the browser to use.  The selected browser must have a \"standard\" install on your system.");
-		System.out
-				.println("\t-outdir <local output directory> : sets local output directory");
-		System.out.println("\t-dohtml [true | false]");
-		System.out.println("\t-doxml [true | false]");
-		System.out.println("\t-doxlsx [true | false]");
-		System.out.println("\t-docsv [true | false]");
-		System.out.println("\t-doftp [true | false]");
-		System.out.println("\t-ftpusername <FTP username> : sets ftp username");
-		System.out.println("\t-ftppassword <FTP password> : sets ftp password");
-		System.out
-				.println("\t-ftpserver <FTP server URL> : sets FTP server url");
-		System.out
-				.println("\t-ftpport <FTP port number> : sets ftp port number");
-		System.out
-				.println("\t-ftpdirectory <FTP directory> : sets FTP directory");
-		System.out
-				.println("\t-startpage <url> : defaults to https://members.cdbaby.com/Login.aspx");
-		System.out.println("\t-sheettitle <string> : sets xlxs sheet title");
-		System.out
-				.println("\t-clickdelay <integer seconds> : added delay between crawler clicks for stability");
-		System.out.println("\t-h : prints this help message");
-	}
-
-	@Override
-	public void run() {
+	private Table getData() {
 
 		Table completeData = new Table();
 
@@ -968,10 +593,424 @@ public class CDBabySalesDataCrawler extends Thread {
 				ex.printStackTrace();
 			}
 		}
+		return completeData;
+	}
+
+	/**
+	 * Gets the output directory prefix
+	 * 
+	 * @return
+	 */
+	public String getDirPrefix() {
+		return this.getOutputDirectory();
+	}
+
+	/**
+	 * Gets the selenium webdriver name
+	 * 
+	 * @return
+	 */
+	public String getDrivername() {
+		return this.drivername;
+	}
+
+	/**
+	 * Gets the ftp directory variable
+	 * 
+	 * @return
+	 */
+	public String getFtpDirectory() {
+		return this.ftpDirectory;
+	}
+
+	/**
+	 * Gets the FTP password
+	 * 
+	 * @return
+	 */
+	public String getFtpPassword() {
+		return this.ftpPassword;
+	}
+
+	/**
+	 * gets the FTP port
+	 * 
+	 * @return
+	 */
+	public String getFtpPort() {
+		return this.ftpPort;
+	}
+
+	/**
+	 * Gets the FTP server
+	 * 
+	 * @return
+	 */
+	public String getFtpServer() {
+		return this.ftpServer;
+	}
+
+	/**
+	 * Gets the FTP username
+	 * 
+	 * @return
+	 */
+	public String getFtpUsername() {
+		return this.ftpUsername;
+	}
+
+	/**
+	 * Gets the output directory
+	 * 
+	 * @return
+	 */
+	public String getOutputDirectory() {
+		return this.outputDirectory;
+	}
+
+	/**
+	 * Gets the CDBaby password
+	 * 
+	 * @return
+	 */
+	public String getPassword() {
+		return this.password;
+	}
+
+	/**
+	 * Gets the XLS Sheet title variable
+	 * 
+	 * @return
+	 */
+	public String getSheetTitle() {
+		return this.sheetTitle;
+	}
+
+	/**
+	 * Gets the CDBaby start page url
+	 * 
+	 * @return
+	 */
+	public String getStartpage() {
+		return this.startpage;
+	}
+
+	/**
+	 * gets the time delay between clicks
+	 * 
+	 * @return
+	 */
+	public int getTimedelay() {
+		return this.timedelay;
+	}
+
+	/**
+	 * Gets the CDBaby username
+	 * 
+	 * @return
+	 */
+	public String getUsername() {
+		return this.username;
+	}
+
+	/**
+	 * 
+	 * @return
+	 */
+	public boolean isDoCsv() {
+		return this.doCsv;
+	}
+
+	/**
+	 * 
+	 * @return
+	 */
+	public boolean isDoFtp() {
+		return this.doFtp;
+	}
+
+	/**
+	 * 
+	 * @return
+	 */
+	public boolean isDoHtml() {
+		return this.doHtml;
+	}
+
+	/**
+	 * 
+	 * @return
+	 */
+	public boolean isDoXlsx() {
+		return this.doXlsx;
+	}
+
+	/**
+	 * 
+	 * @return
+	 */
+	public boolean isDoXml() {
+		return this.doXml;
+	}
+
+	public boolean isExitAfterFinish() {
+		return this.exitAfterFinish;
+	}
+
+	/**
+	 * <p>
+	 * Accepted arguments
+	 * </p>
+	 * <table border=1>
+	 * <tr>
+	 * <td>required</td>
+	 * <td>[-username | -u] string</td>
+	 * <td>string = The CD Baby Account username to use</td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>required</td>
+	 * <td>[-password | -p] string</td>
+	 * <td>string = The CD Baby Account Password to use</td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>required</td>
+	 * <td>-outdir string</td>
+	 * <td>string = The output directory to place completed files</td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>optional</td>
+	 * <td>-dohtml [true|false]</td>
+	 * <td></td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>optional</td>
+	 * <td>-doxml [true|false]</td>
+	 * <td></td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>optional</td>
+	 * <td>-docsv [true|false]</td>
+	 * <td></td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>optional</td>
+	 * <td>-doxlsx [true|false]</td>
+	 * <td></td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>optional</td>
+	 * <td>-doftp [true|false]</td>
+	 * <td></td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>optional</td>
+	 * <td>-ftpusername string</td>
+	 * <td>string = The FTP username to use</td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>optional</td>
+	 * <td>-ftppassword string</td>
+	 * <td>string = The FTP password to use</td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>optional</td>
+	 * <td>-ftpserver string</td>
+	 * <td>string = The FTP server url to use</td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>optional</td>
+	 * <td>-ftpport string</td>
+	 * <td>string = The FTP port to use</td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>optional</td>
+	 * <td>-ftpdirectory string</td>
+	 * <td>string = The FTP directory to use</td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>optional</td>
+	 * <td>-driver [(firefox) | chrome | safari | ie]</td>
+	 * <td>string = The WEBDriver to use to use</td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>optional</td>
+	 * <td>-sheeetitle string</td>
+	 * <td>string = The Title of the xlsx sheet to use</td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>optional</td>
+	 * <td>-startpage string</td>
+	 * <td>string = The url of the CDBaby login page</td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>optional</td>
+	 * <td>-clickdelay string</td>
+	 * <td>string = The amount of click delay to use</td>
+	 * </tr>
+	 * 
+	 * <tr>
+	 * <td>optional</td>
+	 * <td>-h</td>
+	 * <td>Print help information</td>
+	 * </tr>
+	 * 
+	 * </table>
+	 * 
+	 * @param args
+	 */
+	public void parseArgs(String[] args) {
+
+		for (int i = 0; i < args.length; i++) {
+			if (args[i].toLowerCase().contentEquals("-username")
+					|| args[i].toLowerCase().contentEquals("-u")) {
+				this.setUsername(args[++i]);
+			} else if (args[i].toLowerCase().contentEquals("-password")
+					|| args[i].toLowerCase().contentEquals("-p")) {
+				this.setPassword(args[++i]);
+			} else if (args[i].toLowerCase().contentEquals("-outdir")) {
+				this.setOutputDirectory(args[++i]);
+			} else if (args[i].toLowerCase().contentEquals("-dohtml")) {
+				this.setDoHtml(Boolean.parseBoolean(args[++i]));
+			} else if (args[i].toLowerCase().contentEquals("-doxml")) {
+				this.setDoXml(Boolean.parseBoolean(args[++i]));
+			} else if (args[i].toLowerCase().contentEquals("-doxlsx")) {
+				this.setDoXlsx(Boolean.parseBoolean(args[++i]));
+			} else if (args[i].toLowerCase().contentEquals("-docsv")) {
+				this.setDoCsv(Boolean.parseBoolean(args[++i]));
+			} else if (args[i].toLowerCase().contentEquals("-doftp")) {
+				this.setDoFtp(Boolean.parseBoolean(args[++i]));
+			} else if (args[i].toLowerCase().contentEquals("-ftpusername")) {
+				this.setFtpUsername(args[++i]);
+			} else if (args[i].toLowerCase().contentEquals("-ftppassword")) {
+				this.setFtpPassword(args[++i]);
+			} else if (args[i].toLowerCase().contentEquals("-ftpserver")) {
+				this.setFtpServer(args[++i]);
+			} else if (args[i].toLowerCase().contentEquals("-ftpport")) {
+				this.setFtpPort(args[++i]);
+			} else if (args[i].toLowerCase().contentEquals("-ftpdirectory")) {
+				this.setFtpDirectory(args[++i]);
+			} else if (args[i].toLowerCase().contentEquals("-driver")) {
+				this.setDrivername(args[++i]);
+			} else if (args[i].toLowerCase().contentEquals("-sheettitle")) {
+				this.setSheetTitle(args[++i]);
+			} else if (args[i].toLowerCase().contentEquals("-startpage")) {
+				this.setStartpage(args[++i]);
+			} else if (args[i].toLowerCase().contentEquals("-clickdelay")) {
+				this.setTimedelay(Integer.parseInt(args[++i]));
+			} else if (args[i].toLowerCase().contentEquals("-h")) {
+				this.printHelp();
+			}
+		}
+	}
+
+	/**
+	 * Prints the help information to system.out
+	 */
+	public void printHelp() {
+		System.out
+				.print("*********************************************************************************************************************\n");
+		System.out
+				.print("*********************************************************************************************************************\n");
+		System.out.print("CD Baby Sales Data Crawler ("
+				+ CDBabySalesDataCrawlerUI.getVersion() + "):\n");
+		System.out
+				.print("\tWritten by: Jonathan J. Lareau - Willful Wreckords, LLC\n\twww.willfulwreckords.com\n\n");
+		System.out
+				.print("DISCLAIMER:\n\tTHIS SOFTWARE IS PROVIDED \"AS IS\" AND WITHOUT ANY EXPRESSED OR IMPLIED WARRANTIES.\n");
+		System.out
+				.print("*********************************************************************************************************************\n");
+		System.out
+				.print("*********************************************************************************************************************\n");
+		System.out.print("\n");
+
+		System.out
+				.print("PRE_REQUISITES: This software requires that a HTML5 compliant version of Mozilla Firefox, Chrome, IE or Safari "
+						+ "be installed on your system with a \"standard\" vendor install.\n\n");
+		System.out
+				.print("This program is a web-crawler that automates the process of logging "
+						+ "into your CD Baby account and "
+						+ "scraping your sales data for each project "
+						+ "listing that is available in the Accounting Overview pages.\n\n");
+		System.out
+				.print("A new browser window will be opened so the crawler can operate, which "
+						+ "will take a few moments to launch.  Once launched please do not click "
+						+ "inside or make adjustments to this new browser window while the crawler "
+						+ "is running. When the crawler completes it will automatically close this window. \n\n");
+
+		System.out.println("Parameters:");
+		System.out.println("\t-username <CDBaby username> : sets username");
+		System.out.println("\t-password <CDBaby password> : sets password");
+		System.out
+				.println("\t-driver [firefox | chrome | safari | ie] : sets the browser to use.  The selected browser must have a \"standard\" install on your system.");
+		System.out
+				.println("\t-outdir <local output directory> : sets local output directory");
+		System.out.println("\t-dohtml [true | false]");
+		System.out.println("\t-doxml [true | false]");
+		System.out.println("\t-doxlsx [true | false]");
+		System.out.println("\t-docsv [true | false]");
+		System.out.println("\t-doftp [true | false]");
+		System.out.println("\t-ftpusername <FTP username> : sets ftp username");
+		System.out.println("\t-ftppassword <FTP password> : sets ftp password");
+		System.out
+				.println("\t-ftpserver <FTP server URL> : sets FTP server url");
+		System.out
+				.println("\t-ftpport <FTP port number> : sets ftp port number");
+		System.out
+				.println("\t-ftpdirectory <FTP directory> : sets FTP directory");
+		System.out
+				.println("\t-startpage <url> : defaults to https://members.cdbaby.com/Login.aspx");
+		System.out.println("\t-sheettitle <string> : sets xlxs sheet title");
+		System.out
+				.println("\t-clickdelay <integer seconds> : added delay between crawler clicks for stability");
+		System.out.println("\t-h : prints this help message");
+	}
+
+	@Override
+	public void run() {
+
+		Table completeData = this.getData();
 
 		try {
 
+			// This is a change
+
 			System.out.println("Writing output ... ");
+
+			Table sumTotals = completeData.sumBy("ALBUM", "PAYABLE", "QTY.")
+					.sortBy(RankingOrder.DESCENDING, "PAYABLE");
+			this.writeOutputs(this.getOutputDirectory() + "AlbumTotals",
+					sumTotals);
+
+			sumTotals = completeData.sumBy("PARTNER", "PAYABLE", "QTY.")
+					.sortBy(RankingOrder.DESCENDING, "PAYABLE");
+			this.writeOutputs(this.getOutputDirectory() + "PartnerTotals",
+					sumTotals);
+
+			sumTotals = completeData.sumBy("SONG", "PAYABLE", "QTY.").sortBy(
+					RankingOrder.DESCENDING, "PAYABLE");
+			this.writeOutputs(this.getOutputDirectory() + "SongTotals",
+					sumTotals);
+
+			sumTotals = completeData.sumBy("ARTIST", "PAYABLE", "QTY.").sortBy(
+					RankingOrder.DESCENDING, "PAYABLE");
+			this.writeOutputs(this.getOutputDirectory() + "ArtistTotals",
+					sumTotals);
 
 			String[] totals = { "SALEDATE-MS1970", "PAYABLE" };
 			String[] byArtist = { "SALEDATE-MS1970", "PAYABLE", "ARTIST" };
@@ -1031,6 +1070,11 @@ public class CDBabySalesDataCrawler extends Thread {
 			}
 		}
 		System.out.println("Crawling Completed.");
+
+		if (this.exitAfterFinish) {
+			System.out.println("Exiting Application.");
+			System.exit(0);
+		}
 	}
 
 	private void sendFiles(File dir, FTPClient ftp) throws Exception {
@@ -1144,14 +1188,6 @@ public class CDBabySalesDataCrawler extends Thread {
 
 	/**
 	 * 
-	 * @param docsv
-	 */
-	public void setDocsv(boolean docsv) {
-		this.doCsv = docsv;
-	}
-
-	/**
-	 * 
 	 * @param doCsv
 	 */
 	public void setDoCsv(boolean doCsv) {
@@ -1168,14 +1204,6 @@ public class CDBabySalesDataCrawler extends Thread {
 
 	/**
 	 * 
-	 * @param dohtml
-	 */
-	public void setDohtml(boolean dohtml) {
-		this.doHtml = dohtml;
-	}
-
-	/**
-	 * 
 	 * @param doHtml
 	 */
 	public void setDoHtml(boolean doHtml) {
@@ -1184,26 +1212,10 @@ public class CDBabySalesDataCrawler extends Thread {
 
 	/**
 	 * 
-	 * @param doxlsx
-	 */
-	public void setDoxlsx(boolean doxlsx) {
-		this.doXlsx = doxlsx;
-	}
-
-	/**
-	 * 
 	 * @param doXlsx
 	 */
 	public void setDoXlsx(boolean doXlsx) {
 		this.doXlsx = doXlsx;
-	}
-
-	/**
-	 * 
-	 * @param doxml
-	 */
-	public void setDoxml(boolean doxml) {
-		this.doXml = doxml;
 	}
 
 	/**
@@ -1220,6 +1232,10 @@ public class CDBabySalesDataCrawler extends Thread {
 	 */
 	public void setDrivername(String drivername) {
 		this.drivername = drivername;
+	}
+
+	public void setExitAfterFinish(boolean exitAfterFinish) {
+		this.exitAfterFinish = exitAfterFinish;
 	}
 
 	/**
@@ -1335,7 +1351,7 @@ public class CDBabySalesDataCrawler extends Thread {
 		}
 
 		if (this.dosql) {
-			// FINISH THIS SECTION....
+			// TODO: FINISH THIS SECTION....
 		}
 
 		if (this.doHtml) {

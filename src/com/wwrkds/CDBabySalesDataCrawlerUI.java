@@ -98,7 +98,8 @@ public class CDBabySalesDataCrawlerUI {
 			ftpServer = null,
 			startPage = "https://members.cdbaby.com/Login.aspx";
 	private static boolean docsv = false, doxml = false, doxlsx = false,
-			dohtml = true, doftp = false, orgByDate = true;
+			dohtml = true, doftp = false, orgByDate = false,
+			exitAfterFinish = true;
 	private static JCheckBox docsvBox, dohtmlBox, doxlsxBox, doxmlBox,
 			doftpBox, orgByDateBox;
 	private static JButton fbtn1;
@@ -113,7 +114,7 @@ public class CDBabySalesDataCrawlerUI {
 			ftpUserField, ftpPassField, ftpDirField, startPageField,
 			ftpServerField, ftpPortField;
 
-	private static String version = "v1.0.8";
+	private static String version = "v1.0.9";
 
 	private static void getGUIFieldData() {
 
@@ -192,7 +193,7 @@ public class CDBabySalesDataCrawlerUI {
 		CDBabySalesDataCrawlerUI.doftp = Boolean.parseBoolean(userPrefs.get(
 				"doftp", "false"));
 		CDBabySalesDataCrawlerUI.orgByDate = Boolean.parseBoolean(userPrefs
-				.get("orgByDate", "true"));
+				.get("orgByDate", "false"));
 		CDBabySalesDataCrawlerUI.browser = userPrefs.get("browser", "firefox");
 		// CDBabySalesDataCrawlerUI.startPage = userPrefs.get("startpage",
 		// "https://members.cdbaby.com/Login.aspx");
@@ -235,10 +236,10 @@ public class CDBabySalesDataCrawlerUI {
 					CDBabySalesDataCrawlerUI.username,
 					CDBabySalesDataCrawlerUI.password, directory,
 					"CD Baby Sales Data", to);
-			crawler.setDocsv(CDBabySalesDataCrawlerUI.docsv);
-			crawler.setDoxml(CDBabySalesDataCrawlerUI.doxml);
-			crawler.setDohtml(CDBabySalesDataCrawlerUI.dohtml);
-			crawler.setDoxlsx(CDBabySalesDataCrawlerUI.doxlsx);
+			crawler.setDoCsv(CDBabySalesDataCrawlerUI.docsv);
+			crawler.setDoXml(CDBabySalesDataCrawlerUI.doxml);
+			crawler.setDoHtml(CDBabySalesDataCrawlerUI.dohtml);
+			crawler.setDoXlsx(CDBabySalesDataCrawlerUI.doxlsx);
 			crawler.setDoFtp(CDBabySalesDataCrawlerUI.doftp);
 			crawler.setFtpServer(CDBabySalesDataCrawlerUI.ftpServer);
 			crawler.setFtpPort(CDBabySalesDataCrawlerUI.ftpPort);
@@ -247,6 +248,7 @@ public class CDBabySalesDataCrawlerUI {
 			crawler.setFtpPassword(CDBabySalesDataCrawlerUI.ftpPassword);
 			crawler.setDrivername(CDBabySalesDataCrawlerUI.browser);
 			crawler.setStartpage(CDBabySalesDataCrawlerUI.startPage);
+			crawler.setExitAfterFinish(CDBabySalesDataCrawlerUI.exitAfterFinish);
 			crawler.start();
 
 		} else {
@@ -731,6 +733,7 @@ public class CDBabySalesDataCrawlerUI {
 		userPrefs.put("doftp", "" + CDBabySalesDataCrawlerUI.doftp);
 		userPrefs.put("browser", CDBabySalesDataCrawlerUI.browser);
 		userPrefs.put("startpage", CDBabySalesDataCrawlerUI.startPage);
+		userPrefs.put("orgByDate", "" + CDBabySalesDataCrawlerUI.orgByDate);
 	}
 
 	static void setVersion(String version) {

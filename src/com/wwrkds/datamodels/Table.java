@@ -569,10 +569,11 @@ public class Table implements List<Row> {
 			if (cols != null) {
 				for (String key : cols) {
 					if (row.get(key) != null) {
-						group += row.get(key) + "";
+						group += row.get(key) + " ";
 					}
 				}
 			}
+			group = group.trim();
 			if (!groups.containsKey(group)) {
 				groups.put(group, new Table());
 			}
@@ -703,28 +704,74 @@ public class Table implements List<Row> {
 	 * @return
 	 */
 	public Table sortBy(RankingOrder rankingOrder, String... cols) {
-		if (this.size() < 2) {
+		if (this.size() < 2 || cols == null || cols.length == 0) {
 			Table ret = new Table();
 			ret.addAll(this);
 			return ret;
 		}
-		ArrayList<String> sortStrings = new ArrayList<String>();
-		ArrayList<Row> rows = new ArrayList<Row>();
-		for (Row row : this) {
-			rows.add(row);
-			String str = "";
+
+		if (cols.length > 1) {
+			Table ret = this;
 			for (String col : cols) {
-				if (row.containsKey(col)) {
-					str += " " + row.get(col);
-				}
+				ret = ret.sortBy(rankingOrder, col);
 			}
-			str = str.trim();
-			sortStrings.add(str);
+			return ret;
 		}
 
-		Sort.BubbleSort(sortStrings, rows, rankingOrder);
+		// Check if the requested column can be converted into a double?
+		boolean isNumeric = true;
+		if (isNumeric) {
+			Row row = this.get(0);
+			for (String col : cols) {
+				if (row.containsKey(col)) {
+					try {
+						double d = Double.parseDouble(row.get(col));
+						isNumeric &= true;
+					} catch (Exception e) {
+						isNumeric = false;
+					}
+				}
+			}
+		}
 
-		return new Table(rows);
+		if (isNumeric) {
+			ArrayList<Double> sortDoubles = new ArrayList<Double>();
+			ArrayList<Row> rows = new ArrayList<Row>();
+			for (Row row : this) {
+				rows.add(row);
+				String str = "";
+				for (String col : cols) {
+					if (row.containsKey(col)) {
+						str += " " + row.get(col);
+					}
+				}
+				str = str.trim();
+				sortDoubles.add(Double.parseDouble(str));
+			}
+
+			Sort.BubbleSort(sortDoubles, rows, rankingOrder);
+
+			return new Table(rows);
+		} else {
+
+			ArrayList<String> sortStrings = new ArrayList<String>();
+			ArrayList<Row> rows = new ArrayList<Row>();
+			for (Row row : this) {
+				rows.add(row);
+				String str = "";
+				for (String col : cols) {
+					if (row.containsKey(col)) {
+						str += " " + row.get(col);
+					}
+				}
+				str = str.trim();
+				sortStrings.add(str);
+			}
+
+			Sort.BubbleSort(sortStrings, rows, rankingOrder);
+
+			return new Table(rows);
+		}
 	}
 
 	/**
@@ -777,6 +824,15 @@ public class Table implements List<Row> {
 		return output;
 	}
 
+	/**
+	 * Sum the data in the given groupings
+	 * 
+	 * @param X
+	 *            The column to group by
+	 * @param Ys
+	 *            The columns to accumulate
+	 * @return
+	 */
 	public Table sumBy(String X, String... Ys) {
 		Map<String, Table> grouped = this.groupBy(X);
 		Table ret = new Table();
