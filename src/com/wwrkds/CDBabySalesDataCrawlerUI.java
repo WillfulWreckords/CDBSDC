@@ -114,7 +114,7 @@ public class CDBabySalesDataCrawlerUI {
 			ftpUserField, ftpPassField, ftpDirField, startPageField,
 			ftpServerField, ftpPortField;
 
-	private static String version = "v1.0.9";
+	private static String version = "v1.1 2015-05-09";
 
 	private static void getGUIFieldData() {
 

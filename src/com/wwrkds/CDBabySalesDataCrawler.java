@@ -226,8 +226,18 @@ public class CDBabySalesDataCrawler extends Thread {
 					// e3.printStackTrace();
 					// }
 
-					query = driver.findElement(By
-							.partialLinkText("Accounting overview"));
+					try {
+						query = driver.findElement(By
+								.cssSelector("a[title='Sales & Accounting']"));
+					} catch (Exception ex) {
+						System.out
+								.println("Couldn't find sales and accounting link");
+						ex.printStackTrace();
+					}
+					// query = driver.findElement(By
+					// .partialLinkText("Accounting overview"));
+					// query = driver.findElement(By
+					// .partialLinkText("Sales & Accounting"));
 					query.click();
 
 					String overviewsrc = driver.getPageSource();
@@ -538,8 +548,16 @@ public class CDBabySalesDataCrawler extends Thread {
 							// data);
 
 							// driver.get(arg0)
-							driver.findElement(By.partialLinkText("overview"))
-									.click();
+							try {
+								// driver.findElement(By.partialLinkText("overview"))
+								// .click();
+								driver.findElement(
+										By.cssSelector("a[href$='AccountOverview.aspx']"))
+										.click();
+							} catch (Exception ex) {
+								ex.printStackTrace();
+								throw ex;
+							}
 							// try {
 							// Thread.sleep(this.timedelay);
 							// } catch (InterruptedException e) {
@@ -986,70 +1004,141 @@ public class CDBabySalesDataCrawler extends Thread {
 
 		Table completeData = this.getData();
 
+		System.out.println("Writing output ... ");
+
+		boolean alsoWriteToCurrentDir = false;
+		String currentDirName = null;
+		if (!this.getOutputDirectory().matches("(?si).*current.*")) {
+			currentDirName = new File(this.getOutputDirectory()).getParent()
+					+ File.separator + "current" + File.separator;
+			alsoWriteToCurrentDir = true;
+		}
+		Table sumTotals = null;
 		try {
-
-			// This is a change
-
-			System.out.println("Writing output ... ");
-
-			Table sumTotals = completeData.sumBy("ALBUM", "PAYABLE", "QTY.")
-					.sortBy(RankingOrder.DESCENDING, "PAYABLE");
+			sumTotals = completeData.sumBy("ALBUM", "PAYABLE", "QTY.").sortBy(
+					RankingOrder.DESCENDING, "PAYABLE");
 			this.writeOutputs(this.getOutputDirectory() + "AlbumTotals",
 					sumTotals);
-
+			if (alsoWriteToCurrentDir) {
+				this.writeOutputs(currentDirName + "AlbumTotals", sumTotals);
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		try {
 			sumTotals = completeData.sumBy("PARTNER", "PAYABLE", "QTY.")
 					.sortBy(RankingOrder.DESCENDING, "PAYABLE");
 			this.writeOutputs(this.getOutputDirectory() + "PartnerTotals",
 					sumTotals);
+			if (alsoWriteToCurrentDir) {
+				this.writeOutputs(currentDirName + "PartnerTotals", sumTotals);
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		try {
 
 			sumTotals = completeData.sumBy("SONG", "PAYABLE", "QTY.").sortBy(
 					RankingOrder.DESCENDING, "PAYABLE");
 			this.writeOutputs(this.getOutputDirectory() + "SongTotals",
 					sumTotals);
+			if (alsoWriteToCurrentDir) {
+				this.writeOutputs(currentDirName + "SongTotals", sumTotals);
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		try {
 
 			sumTotals = completeData.sumBy("ARTIST", "PAYABLE", "QTY.").sortBy(
 					RankingOrder.DESCENDING, "PAYABLE");
 			this.writeOutputs(this.getOutputDirectory() + "ArtistTotals",
 					sumTotals);
-
-			String[] totals = { "SALEDATE-MS1970", "PAYABLE" };
-			String[] byArtist = { "SALEDATE-MS1970", "PAYABLE", "ARTIST" };
-			String[] byAlbum = { "SALEDATE-MS1970", "PAYABLE", "ALBUM" };
-			// String[] byPartner = { "SALEDATE-MS1970", "PAYABLE", "PARTNER" };
-			String[] artists = { "ARTIST", "PAYABLE", "TYPE=PIE" };
-			String[] albums = { "ALBUM", "PAYABLE", "TYPE=PIE" };
-			String[] partners = { "PARTNER", "PAYABLE", "TYPE=PIE" };
+			if (alsoWriteToCurrentDir) {
+				this.writeOutputs(currentDirName + "ArtistTotals", sumTotals);
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		String[] totals = { "SALEDATE-MS1970", "PAYABLE" };
+		String[] byArtist = { "SALEDATE-MS1970", "PAYABLE", "ARTIST" };
+		String[] byAlbum = { "SALEDATE-MS1970", "PAYABLE", "ALBUM" };
+		// String[] byPartner = { "SALEDATE-MS1970", "PAYABLE", "PARTNER" };
+		String[] artists = { "ARTIST", "PAYABLE", "TYPE=PIE" };
+		String[] albums = { "ALBUM", "PAYABLE", "TYPE=PIE" };
+		String[] partners = { "PARTNER", "PAYABLE", "TYPE=PIE" };
+		try {
 
 			this.writeOutputs(this.getOutputDirectory() + "Complete",
 					completeData, artists, albums, partners, totals, byArtist,
 					byAlbum);
+			if (alsoWriteToCurrentDir) {
+				this.writeOutputs(currentDirName + "Complete", completeData,
+						artists, albums, partners, totals, byArtist, byAlbum);
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		Map<String, Table> grouped = null;
+		try {
 
-			Map<String, Table> grouped = completeData.groupBy("PARTNER");
+			grouped = completeData.groupBy("PARTNER");
 			for (Entry<String, Table> entry : grouped.entrySet()) {
 				this.writeOutputs(this.getOutputDirectory() + "byPartner"
 						+ File.separator + entry.getKey(), entry.getValue(),
 						totals);
+				if (alsoWriteToCurrentDir) {
+					this.writeOutputs(currentDirName + "byPartner"
+							+ File.separator + entry.getKey(),
+							entry.getValue(), totals);
+				}
 			}
-
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		try {
 			grouped = completeData.groupBy("ALBUM");
 			for (Entry<String, Table> entry : grouped.entrySet()) {
 				this.writeOutputs(this.getOutputDirectory() + "byAlbum"
 						+ File.separator + entry.getKey(), entry.getValue(),
 						totals);
+				if (alsoWriteToCurrentDir) {
+					this.writeOutputs(currentDirName + "byAlbum"
+							+ File.separator + entry.getKey(),
+							entry.getValue(), totals);
+				}
 			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		try {
 
 			grouped = completeData.groupBy("ARTIST");
 			for (Entry<String, Table> entry : grouped.entrySet()) {
 				this.writeOutputs(this.getOutputDirectory() + "byArtist"
 						+ File.separator + entry.getKey(), entry.getValue(),
 						totals);
+				if (alsoWriteToCurrentDir) {
+					this.writeOutputs(currentDirName + "byArtist"
+							+ File.separator + entry.getKey(),
+							entry.getValue(), totals);
+				}
 			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		try {
 
 			grouped = completeData.groupBy("ALBUM", "ARTIST", "SONG");
 			for (Entry<String, Table> entry : grouped.entrySet()) {
 				this.writeOutputs(this.getOutputDirectory() + "bySong"
 						+ File.separator + entry.getKey(), entry.getValue(),
 						totals);
+				if (alsoWriteToCurrentDir) {
+					this.writeOutputs(currentDirName + "bySong"
+							+ File.separator + entry.getKey(),
+							entry.getValue(), totals);
+				}
 			}
 		} catch (Exception ex) {
 			ex.printStackTrace();
@@ -1334,8 +1423,12 @@ public class CDBabySalesDataCrawler extends Thread {
 	 */
 	private void writeOutputs(String filename, Table table,
 			String[]... plotArgs) {
-		System.out.print(">>Writing outputs for "
-				+ new File(filename).getName() + "\n");
+		File file = new File(filename);
+		if (!file.getParentFile().exists()) {
+			file.getParentFile().mkdirs();
+		}
+
+		System.out.print(">>Writing outputs for " + file.getName() + "\n");
 		System.out.flush();
 
 		if (this.doXml) {
