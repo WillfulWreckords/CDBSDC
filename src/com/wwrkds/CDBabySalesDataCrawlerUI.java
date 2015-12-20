@@ -216,7 +216,7 @@ public class CDBabySalesDataCrawlerUI {
 			CDBabySalesDataCrawlerUI.directory += File.separator;
 		}
 
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MMM-dd_HH-mm-ss");
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd/HH-mm-ss");
 		Calendar c = Calendar.getInstance();
 		String str = sdf.format(c.getTime());
 		String directory = CDBabySalesDataCrawlerUI.directory;
