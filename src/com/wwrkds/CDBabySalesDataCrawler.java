@@ -855,7 +855,9 @@ public class CDBabySalesDataCrawler extends Thread {
 		boolean alsoWriteToCurrentDir = false;
 		String currentDirName = null;
 		if (!this.getOutputDirectory().matches("(?si).*current.*")) {
-			currentDirName = new File(this.getOutputDirectory()).getParent()
+			currentDirName = new File(this.getOutputDirectory())
+					.getParentFile().getParentFile().getParentFile()
+					.getParentFile().getAbsolutePath()
 					+ File.separator + "current" + File.separator;
 			alsoWriteToCurrentDir = true;
 		}
