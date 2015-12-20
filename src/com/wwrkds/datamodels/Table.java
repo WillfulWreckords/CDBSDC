@@ -3,7 +3,6 @@ package com.wwrkds.datamodels;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -1138,9 +1137,7 @@ public class Table implements List<Row> {
 			FileOutputStream out = new FileOutputStream(file);
 			workbook.write(out);
 			out.close();
-		} catch (FileNotFoundException e) {
-			// e.printStackTrace();
-		} catch (IOException e) {
+		} catch (Exception e) {
 			// e.printStackTrace();
 		}
 	}

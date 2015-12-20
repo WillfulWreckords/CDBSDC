@@ -5,7 +5,9 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -25,9 +27,11 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.interactions.Actions;
 
 import com.wwrkds.datamodels.RankingOrder;
 import com.wwrkds.datamodels.Row;
@@ -43,6 +47,23 @@ import com.wwrkds.datamodels.TimeStamp;
  * 
  */
 public class CDBabySalesDataCrawler extends Thread {
+
+	private static void clickButton(WebDriver driver, String buttonText) {
+		WebElement parentElement = driver.findElement(By
+				.partialLinkText(buttonText));
+		Actions actionProvider = new Actions(driver);
+		actionProvider.moveToElement(parentElement).perform();
+		parentElement.click();
+	}
+
+	private static void clickButtonByClass(WebDriver driver,
+			String buttonClassName) {
+		WebElement parentElement = driver.findElement(By
+				.className(buttonClassName));
+		Actions actionProvider = new Actions(driver);
+		actionProvider.moveToElement(parentElement).perform();
+		parentElement.click();
+	}
 
 	/**
 	 * Main function for running the crawler as a command line program. Use the
@@ -78,7 +99,9 @@ public class CDBabySalesDataCrawler extends Thread {
 	private String password = null;
 	private String sheetTitle = "CDBaby Sales Data";
 	private String startpage = "https://members.cdbaby.com/Login.aspx";
+
 	private int timedelay = 15000;
+
 	private String username = null;
 
 	/**
@@ -181,7 +204,7 @@ public class CDBabySalesDataCrawler extends Thread {
 						.setScriptTimeout(10, TimeUnit.SECONDS);
 
 				try {
-					driver.manage().deleteAllCookies();
+					// driver.manage().deleteAllCookies();
 
 					// Go to the CDBaby artist login page
 					driver.get(this.startpage);
@@ -219,26 +242,28 @@ public class CDBabySalesDataCrawler extends Thread {
 					query = driver.findElement(By.id(input_id));
 					query.click();
 
-					// try {
-					// Thread.sleep(this.timedelay);
-					// } catch (InterruptedException e3) {
-					// // TODO Auto-generated catch block
-					// e3.printStackTrace();
-					// }
+					try {
+						Thread.sleep(this.timedelay);
+					} catch (InterruptedException e3) {
+						// TODO Auto-generated catch block
+						e3.printStackTrace();
+					}
 
 					try {
-						query = driver.findElement(By
-								.cssSelector("a[title='Sales & Accounting']"));
+						CDBabySalesDataCrawler.clickButton(driver,
+								"Looks correct!");
 					} catch (Exception ex) {
-						System.out
-								.println("Couldn't find sales and accounting link");
-						ex.printStackTrace();
+
 					}
-					// query = driver.findElement(By
-					// .partialLinkText("Accounting overview"));
-					// query = driver.findElement(By
-					// .partialLinkText("Sales & Accounting"));
-					query.click();
+
+					try {
+						Thread.sleep(this.timedelay);
+					} catch (InterruptedException e3) {
+						// TODO Auto-generated catch block
+						e3.printStackTrace();
+					}
+
+					driver.get("https://members.cdbaby.com/Accounting/AccountOverview.aspx");
 
 					String overviewsrc = driver.getPageSource();
 					try {
@@ -254,318 +279,139 @@ public class CDBabySalesDataCrawler extends Thread {
 						ex.printStackTrace();
 					}
 
-					// try {
-					// Thread.sleep(this.timedelay);
-					// } catch (InterruptedException e2) {
-					// // TODO Auto-generated catch block
-					// e2.printStackTrace();
-					// }
+					List<String> urls = new ArrayList<String>();
+					urls.add("https://members.cdbaby.com/Accounting/DigitalArtistOverview.aspx");
+					urls.add("https://members.cdbaby.com/Accounting/SyncArtistOverview.aspx");
+					urls.add("https://members.cdbaby.com/Accounting/TotalCDBSales-Physical.aspx");
+					urls.add("https://members.cdbaby.com/Accounting/TotalCDBSales-Digital.aspx");
+					Set<String> seen = new LinkedHashSet<String>();
+					for (String url : urls) {
+						seen.addAll(this.scrapeDataPages(driver, url));
+					}
 
-					ArrayList<Integer> visited = new ArrayList<Integer>();
-					while (true) {
+					Table data = new Table();
 
-						String albumTitle = "";
+					int current = 0;
+					for (String src : seen) {
+						try {
+							current++;
+							File rawsource = new File(this.getOutputDirectory()
+									+ "raw" + File.separator + "Page" + current
+									+ ".raw.html");
+							rawsource.getParentFile().mkdirs();
+							PrintStream ps = new PrintStream(rawsource);
+							ps.println(src);
+							ps.close();
 
-						List<WebElement> dataTables = driver
-								.findElements(By
-										.cssSelector("table.data-table-embed tr.light-row"));
-						WebElement q = null;
-						int vi = 0;
-						for (WebElement dt : dataTables) {
-							String text = dt.getText().trim()
-									.replaceAll("\\n\\x0B\\f\\r", "");
-							// System.out.println(text);
-							if (!text.contains("Total Sales")
-									&& !visited.contains(vi)) {
-								q = dt;
-								// Get the project name...
-								albumTitle = text.substring(0,
-										text.indexOf("$") - 1).trim();
-								// Replace invalid file name elements
-								albumTitle = albumTitle
-										.replaceAll(
-												"[\\\\\\/\\:\\,\\!\\@\\#\\$\\%\\^&\\+\\*\\(\\)]",
-												"");
-								albumTitle = albumTitle.trim();
-								albumTitle = albumTitle.replace(" ", "-");
-								visited.add(vi);
-								System.out.print(">>" + text + "\n");
-								break;
-							}
-							vi++;
+							System.out.println(">>\t\tpage # " + current);
+
+							// org.w3c.dom.Document docw3c =
+							// loadXMLFromString(src);
+						} catch (Exception ex) {
+							ex.printStackTrace();
 						}
 
-						if (q != null) {
-							WebElement link = q.findElement(By
-									.partialLinkText("view sales"));
-							link.click();
-
-							try {
-								// Thread.sleep(this.timedelay);
-								WebElement select = driver.findElement(By
-										.tagName("select"));
-								List<WebElement> allOptions = select
-										.findElements(By.tagName("option"));
-								for (WebElement option : allOptions) {
-									// System.out.println(String.format("Value is: %s",
-									// option.getAttribute("value")));
-									if (option.getText().contains("500")) {
-										option.click();
-									}
-								}
-							} catch (Exception ex3) {
-
+						try {
+							Document doc = Jsoup.parse(src);
+							Elements els1 = doc
+									.select("div.section-title-953 h2");
+							String revenueType = "";
+							for (Element el : els1) {
+								revenueType = el.text();
 							}
 
-							// try {
-							// Thread.sleep(this.timedelay);
-							// } catch (InterruptedException e2) {
-							// // TODO Auto-generated catch block
-							// e2.printStackTrace();
-							// }
-
-							String revenueType = "UNKNOWN";
-							try {
-								revenueType = " "
-										+ driver.findElement(
-												By.cssSelector("div.section-title-953 h2"))
-												.getText();
-								revenueType = revenueType.replace("(", "")
-										.replace(")", "");
-
-							} catch (Exception ex4) {
-
+							Elements elements = doc
+									.select("table.data-table thead tr th");
+							List<String> headers = new ArrayList<String>();
+							for (Element el : elements) {
+								headers.add(el.text().replace(", ", ""));
 							}
-							revenueType = revenueType.trim();
-							revenueType = revenueType.replace(" ", "-");
 
-							System.out.print(">>\tCollecting table data\n");
-							System.out.flush();
-
-							Set<String> seen = new HashSet<String>();
-							while (true) {
-
-								// try {
-								// Thread.sleep(this.timedelay * 2);
-								// } catch (InterruptedException e1) {
-								// // TODO Auto-generated catch block
-								// e1.printStackTrace();
-								// }
-
-								// Store the raw page source
-								String src = driver.getPageSource();
-
-								Pattern p = Pattern
-										.compile("(?is)<table class=\"data-table.*?</table>");
-								Matcher m = p.matcher(src);
-								while (m.find()) {
-									src = m.group();
+							elements = doc.select("table.data-table tbody tr");
+							for (Element rowel : elements) {
+								if (rowel.text().matches("(?is).*PAGE TOTAL.*")) {
+									continue;
 								}
+								Row row = new Row();
 
-								System.out
-										.println("\t\tGetting page source (table hashcode= "
-												+ src.hashCode() + ")");
+								// Add revenue type field
+								row.put("REVENUETYPE",
+										revenueType.toUpperCase());
 
-								seen.add(src);
+								// Default partner value
+								row.put("USER", this.getUsername()
+										.toUpperCase());
 
-								try {
+								// Default partner value
+								row.put("PARTNER", "CDBaby");
 
-									WebElement we = driver.findElement(By
-											.cssSelector("a.next-link"));
-									we.click();
+								// Error checking and formatting of date
+								// data
+								int i = 0;
+								for (Element el : rowel.select("td")) {
 									try {
-										Thread.sleep(this.timedelay);
-									} catch (InterruptedException e1) {
-										// TODO Auto-generated catch block
-										e1.printStackTrace();
+										String hdr = headers.get(i++);
+
+										String val = el.text().trim();
+
+										if (hdr.toLowerCase().matches("sales")
+												|| hdr.toLowerCase().matches(
+														"date")
+												|| hdr.toLowerCase().matches(
+														"report")) {
+											val = val.replace("Jan ", "1/");
+											val = val.replace("Feb ", "2/");
+											val = val.replace("Mar ", "3/");
+											val = val.replace("Apr ", "4/");
+											val = val.replace("May ", "5/");
+											val = val.replace("Jun ", "6/");
+											val = val.replace("Jul ", "7/");
+											val = val.replace("Aug ", "8/");
+											val = val.replace("Sep ", "9/");
+											val = val.replace("Oct ", "10/");
+											val = val.replace("Nov ", "11/");
+											val = val.replace("Dec ", "12/");
+											val = val.replace(", ", "/");
+										}
+										row.put(hdr.toUpperCase(), val);
+									} catch (Exception ex2) {
+										ex2.printStackTrace();
 									}
-								} catch (Exception e) {
-									// e.printStackTrace();
-									break;
-								}
-							}
-
-							Table data = new Table();
-
-							int current = 0;
-							for (String src : seen) {
-								try {
-									current++;
-									File rawsource = new File(
-											this.getOutputDirectory() + "raw"
-													+ File.separator
-													+ revenueType
-													+ File.separator
-													+ albumTitle
-													+ File.separator + "Page"
-													+ current + ".raw.html");
-									rawsource.getParentFile().mkdirs();
-									PrintStream ps = new PrintStream(rawsource);
-									ps.println(src);
-									ps.close();
-
-									System.out.println(">>\t\tpage # "
-											+ current);
-
-									// org.w3c.dom.Document docw3c =
-									// loadXMLFromString(src);
-								} catch (Exception ex) {
-									ex.printStackTrace();
 								}
 
-								try {
-									Document doc = Jsoup.parse(src);
-
-									Elements elements = doc
-											.select("table.data-table thead tr th");
-									List<String> headers = new ArrayList<String>();
-									for (Element el : elements) {
-										headers.add(el.text().replace(", ", ""));
-									}
-
-									elements = doc
-											.select("table.data-table tbody tr");
-									for (Element rowel : elements) {
-										if (rowel.text().matches(
-												"(?is).*PAGE TOTAL.*")) {
-											continue;
-										}
-										Row row = new Row();
-
-										// Add revenue type field
-										row.put("REVENUETYPE",
-												revenueType.toUpperCase());
-
-										// Default partner value
-										row.put("USER", this.getUsername()
-												.toUpperCase());
-
-										// Default partner value
-										row.put("PARTNER", "CDBaby");
-
-										// Error checking and formatting of date
-										// data
-										int i = 0;
-										for (Element el : rowel.select("td")) {
-											try {
-												String hdr = headers.get(i++);
-
-												String val = el.text().trim();
-
-												if (hdr.toLowerCase().matches(
-														"sales")
-														|| hdr.toLowerCase()
-																.matches("date")
-														|| hdr.toLowerCase()
-																.matches(
-																		"report")) {
-													val = val.replace("Jan ",
-															"1/");
-													val = val.replace("Feb ",
-															"2/");
-													val = val.replace("Mar ",
-															"3/");
-													val = val.replace("Apr ",
-															"4/");
-													val = val.replace("May ",
-															"5/");
-													val = val.replace("Jun ",
-															"6/");
-													val = val.replace("Jul ",
-															"7/");
-													val = val.replace("Aug ",
-															"8/");
-													val = val.replace("Sep ",
-															"9/");
-													val = val.replace("Oct ",
-															"10/");
-													val = val.replace("Nov ",
-															"11/");
-													val = val.replace("Dec ",
-															"12/");
-													val = val
-															.replace(", ", "/");
-												}
-												row.put(hdr.toUpperCase(), val);
-											} catch (Exception ex2) {
-												ex2.printStackTrace();
-											}
-										}
-
-										// Cleanup and extra formatting
-										if (row.get("DATE") != null) {
-											row.put("SALEDATE", row.get("DATE"));
-										}
-										if (row.get("SALES") != null) {
-											String dstr = row.get("SALES")
-													.trim();
-											dstr = dstr.replace("/", "/01/");
-											row.put("SALEDATE", dstr);
-										}
-										if (row.get("SALEDATE") != null) {
-											String dstr = row.get("SALEDATE");
-
-											Matcher m = Pattern.compile(
-													"(\\d+)/(\\d+)/(\\d+)")
-													.matcher(dstr);
-											double yyyy = 0, mm = 0, dd = 0;
-											if (m.find()) {
-												yyyy = Double.parseDouble(m
-														.group(3));
-												mm = Double.parseDouble(m
-														.group(1));
-												dd = Double.parseDouble(m
-														.group(2));
-												TimeStamp date = new TimeStamp(
-														yyyy, mm, dd);
-												row.put("SALEDATE-MS1970",
-														(long) date.toMS1970()
-																+ "");
-											}
-										}
-
-										if (row.get("REVENUETYPE").matches(
-												"DIGITAL-DISTRIBUTION-SALES")
-												&& row.get("TYPE") != null
-												&& row.get("TYPE").matches(
-														"(?i)Sync - Y")) {
-											// No-OP to manage their
-											// duplication of data...
-										} else {
-											completeData.add(row);
-											data.add(row);
-										}
-									}
-								} catch (Exception ex) {
-									ex.printStackTrace();
+								// Cleanup and extra formatting
+								if (row.get("DATE") != null) {
+									row.put("SALEDATE", row.get("DATE"));
 								}
-							}
+								if (row.get("SALES") != null) {
+									String dstr = row.get("SALES").trim();
+									dstr = dstr.replace("/", "/01/");
+									row.put("SALEDATE", dstr);
+								}
+								if (row.get("SALEDATE") != null) {
+									String dstr = row.get("SALEDATE");
 
-							// System.out.println("");
-							// this.writeOutputs(
-							// this.getOutputDirectory() + albumTitle
-							// + File.separator + revenueType,
-							// data);
+									Matcher m = Pattern.compile(
+											"(\\d+)/(\\d+)/(\\d+)").matcher(
+											dstr);
+									double yyyy = 0, mm = 0, dd = 0;
+									if (m.find()) {
+										yyyy = Double.parseDouble(m.group(3));
+										mm = Double.parseDouble(m.group(1));
+										dd = Double.parseDouble(m.group(2));
+										TimeStamp date = new TimeStamp(yyyy,
+												mm, dd);
+										row.put("SALEDATE-MS1970",
+												(long) date.toMS1970() + "");
+									}
+								}
 
-							// driver.get(arg0)
-							try {
-								// driver.findElement(By.partialLinkText("overview"))
-								// .click();
-								driver.findElement(
-										By.cssSelector("a[href$='AccountOverview.aspx']"))
-										.click();
-							} catch (Exception ex) {
-								ex.printStackTrace();
-								throw ex;
+								completeData.add(row);
+								data.add(row);
+
 							}
-							// try {
-							// Thread.sleep(this.timedelay);
-							// } catch (InterruptedException e) {
-							// // TODO Auto-generated catch block
-							// e.printStackTrace();
-							// }
-						} else {
-							break;
+						} catch (Exception ex) {
+							ex.printStackTrace();
 						}
 					}
 
@@ -1166,6 +1012,203 @@ public class CDBabySalesDataCrawler extends Thread {
 		}
 	}
 
+	private Collection<String> scrapeDataPages(WebDriver driver, String url) {
+
+		driver.get(url);
+
+		try {
+			Thread.sleep(1000);
+
+			((JavascriptExecutor) driver)
+					.executeScript("javascript:window.scrollTo(0, 0);");
+
+			Thread.sleep(1000);
+		} catch (Exception ex) {
+
+		}
+
+		Set<String> ret = new LinkedHashSet<String>();
+
+		boolean set500 = false;
+		try {
+			Set<String> visited = new LinkedHashSet<String>();
+			while (true) {
+				List<WebElement> data = driver.findElements(By
+						.cssSelector("table.data-table tr.hover-row"));
+				if (data == null || data.isEmpty()) {
+					if (!set500) {
+						try {
+							// Thread.sleep(this.timedelay);
+							WebElement select = driver.findElement(By
+									.tagName("select"));
+							List<WebElement> allOptions = select
+									.findElements(By.tagName("option"));
+							for (WebElement option : allOptions) {
+								// System.out.println(String.format("Value is: %s",
+								// option.getAttribute("value")));
+								if (option.getText().contains("500")) {
+									option.click();
+								}
+							}
+							set500 = true;
+
+							Thread.sleep(500);
+
+						} catch (Exception ex3) {
+
+						}
+					}
+
+					ret.addAll(this.scrapeRows(driver));
+
+					break;
+				} else {
+					Iterator<WebElement> it = data.iterator();
+					while (it.hasNext()) {
+						WebElement tr = it.next();
+						String text = tr.getText();
+						if (visited.contains(text)) {
+							it.remove();
+						}
+					}
+					if (data.isEmpty()) {
+						break;
+					}
+					for (WebElement tr : data) {
+						String text = tr.getText();
+						if (!visited.contains(text)) {
+							visited.add(tr.getText());
+							tr.findElement(By.partialLinkText("view sales"))
+									.click();
+
+							Thread.sleep(500);
+
+							if (!set500) {
+								try {
+									// Thread.sleep(this.timedelay);
+									WebElement select = driver.findElement(By
+											.tagName("select"));
+									List<WebElement> allOptions = select
+											.findElements(By.tagName("option"));
+									for (WebElement option : allOptions) {
+										// System.out.println(String.format("Value is: %s",
+										// option.getAttribute("value")));
+										if (option.getText().contains("500")) {
+											option.click();
+										}
+									}
+									set500 = true;
+
+									Thread.sleep(500);
+
+								} catch (Exception ex3) {
+
+								}
+							}
+							ret.addAll(this.scrapeRows(driver));
+
+							driver.get(url);
+
+							break;
+						}
+					}
+				}
+			}
+		} catch (Exception ex) {
+
+		}
+
+		return ret;
+	}
+
+	private Collection<String> scrapeRows(WebDriver driver) {
+		Set<String> list = new LinkedHashSet<String>();
+
+		try {
+			Thread.sleep(1000);
+
+			((JavascriptExecutor) driver)
+					.executeScript("javascript:window.scrollTo(0, 0);");
+
+			Thread.sleep(1000);
+		} catch (Exception ex) {
+
+		}
+		// List<WebElement> chk = driver.findElements(By.cssSelector("table"));
+		// if (chk == null || chk.isEmpty()) {
+		// } else {
+		String src = driver.getPageSource();
+		list.add(src);
+		// }
+
+		/*
+		 * List<WebElement> hrs = driver.findElements(By
+		 * .cssSelector("table.data-table thead tr th")); List<String> headers =
+		 * new ArrayList<String>(); for (WebElement hr : hrs) {
+		 * headers.add(hr.getText()); } if (!headers.isEmpty()) {
+		 * list.add(headers); }
+		 * 
+		 * List<WebElement> rows = driver.findElements(By
+		 * .cssSelector("table.data-table tbody tr.light-row")); for (WebElement
+		 * row : rows) { List<WebElement> cols =
+		 * row.findElements(By.cssSelector("td")); List<String> r = new
+		 * ArrayList<String>(); for (WebElement col : cols) {
+		 * r.add(col.getText()); } if (!r.isEmpty()) { list.add(r); } } rows =
+		 * driver.findElements(By
+		 * .cssSelector("table.data-table tbody tr.dark-row")); for (WebElement
+		 * row : rows) { List<WebElement> cols =
+		 * row.findElements(By.cssSelector("td")); List<String> r = new
+		 * ArrayList<String>(); for (WebElement col : cols) {
+		 * r.add(col.getText()); } if (!r.isEmpty()) { list.add(r); } }
+		 */
+
+		try {
+
+			Thread.sleep(1000);
+
+			((JavascriptExecutor) driver)
+					.executeScript("javascript:window.scrollTo(0, document.body.scrollHeight);");
+
+			Thread.sleep(1000);
+
+			((JavascriptExecutor) driver)
+					.executeScript("javascript:window.scrollBy(0,-500)");
+			Thread.sleep(1000);
+
+			WebElement nxt = driver
+					.findElement(By
+							.cssSelector("table.pagination tbody tr td a.next-link:not(.aspNetDisabled)"));
+
+			String js = "javascript:__doPostBack('ctl00$centerColumn$rptDDSales$ctl11$lnkPageNext','')";
+
+			// WebElement nxt = driver.findElement(By.partialLinkText("Next"));
+
+			// WebElement actv = driver.findElement(By
+			// .cssSelector("div.page-numbers table tbody td a.active"));
+			// String s1 = actv.getText();
+
+			if (nxt != null) {
+
+				nxt.click();
+
+				Thread.sleep(1000);
+
+				// WebElement actv2 = driver
+				// .findElement(By
+				// .cssSelector("div.page-numbers table tbody td a.active"));
+
+				// String s2 = actv2.getText();
+				// if (!s1.matches(s2)) {
+				list.addAll(this.scrapeRows(driver));
+				// }
+			}
+		} catch (Exception ex) {
+			// ex.printStackTrace();
+		}
+		return list;
+
+	}
+
 	private void sendFiles(File dir, FTPClient ftp) throws Exception {
 		String cd = ftp.printWorkingDirectory();
 
@@ -1440,7 +1483,7 @@ public class CDBabySalesDataCrawler extends Thread {
 		}
 
 		if (this.doXlsx) {
-			table.writeXLSX(filename + ".xlsx", "sheet1");
+			// table.writeXLSX(filename + ".xlsx", "sheet1");
 		}
 
 		if (this.dosql) {
