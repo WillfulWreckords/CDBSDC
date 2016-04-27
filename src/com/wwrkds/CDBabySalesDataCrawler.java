@@ -188,16 +188,14 @@ public class CDBabySalesDataCrawler extends Thread {
 				} else if (this.drivername.trim().toLowerCase()
 						.contentEquals("safari")) {
 					driver = new org.openqa.selenium.safari.SafariDriver();
-				} else if (this.drivername.trim().toLowerCase()
-						.contentEquals("htmlunit")) {
-					driver = new org.openqa.selenium.htmlunit.HtmlUnitDriver();
 				}
 			} catch (Exception e) {
 
 			}
 
 			if (driver != null) {
-				driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+				// driver.manage().timeouts().implicitlyWait(10,
+				// TimeUnit.SECONDS);
 				driver.manage().timeouts()
 						.pageLoadTimeout(10, TimeUnit.SECONDS);
 				driver.manage().timeouts()
