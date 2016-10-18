@@ -42,15 +42,15 @@ import com.wwrkds.datamodels.TimeStamp;
  * This is the web crawler implementation class for crawling the CDBaby site and
  * downloading sales information. It is instantiated and called by the
  * CDBabySalesDataCrawlerUI class
- * 
+ *
  * @author jonlareau, Willful Wreckords, LLC, willfulwreckords@gmail.com
- * 
+ *
  */
 public class CDBabySalesDataCrawler extends Thread {
 
 	private static void clickButton(WebDriver driver, String buttonText) {
-		WebElement parentElement = driver.findElement(By
-				.partialLinkText(buttonText));
+		WebElement parentElement = driver
+				.findElement(By.partialLinkText(buttonText));
 		Actions actionProvider = new Actions(driver);
 		actionProvider.moveToElement(parentElement).perform();
 		parentElement.click();
@@ -58,8 +58,8 @@ public class CDBabySalesDataCrawler extends Thread {
 
 	private static void clickButtonByClass(WebDriver driver,
 			String buttonClassName) {
-		WebElement parentElement = driver.findElement(By
-				.className(buttonClassName));
+		WebElement parentElement = driver
+				.findElement(By.className(buttonClassName));
 		Actions actionProvider = new Actions(driver);
 		actionProvider.moveToElement(parentElement).perform();
 		parentElement.click();
@@ -69,7 +69,7 @@ public class CDBabySalesDataCrawler extends Thread {
 	 * Main function for running the crawler as a command line program. Use the
 	 * "-h" option to print current help commands or see the {@see parseArgs}
 	 * javadocs.
-	 * 
+	 *
 	 * @param args
 	 */
 	public static void main(String[] args) {
@@ -113,7 +113,7 @@ public class CDBabySalesDataCrawler extends Thread {
 
 	/**
 	 * Constructor
-	 * 
+	 *
 	 * @param u
 	 *            username
 	 * @param p
@@ -132,7 +132,7 @@ public class CDBabySalesDataCrawler extends Thread {
 
 	/**
 	 * Constructor
-	 * 
+	 *
 	 * @param u
 	 *            username
 	 * @param p
@@ -154,15 +154,14 @@ public class CDBabySalesDataCrawler extends Thread {
 	}
 
 	private boolean doCrawl() {
-		return this.startpage.startsWith("http")
-				&& (this.isDoCsv() || this.isDoHtml() || this.isDoXlsx() || this
-						.isDoXlsx());
+		return this.startpage.startsWith("http") && (this.isDoCsv()
+				|| this.isDoHtml() || this.isDoXlsx() || this.isDoXlsx());
 	}
 
 	/**
 	 * This is the function that dows the meat of the data collection / scapring
 	 * from the CDBaby web content
-	 * 
+	 *
 	 * @return
 	 */
 	private Table getData() {
@@ -174,6 +173,10 @@ public class CDBabySalesDataCrawler extends Thread {
 			org.apache.log4j.BasicConfigurator.configure(new NullAppender());
 
 			// The Firefox driver supports javascript
+
+			System.setProperty("webdriver.gecko.driver",
+					"/Applications/CDBSDC.app/Contents/MacOS/geckodriver");
+
 			WebDriver driver = null;
 			try {
 				if (this.drivername.trim().toLowerCase()
@@ -196,16 +199,36 @@ public class CDBabySalesDataCrawler extends Thread {
 			if (driver != null) {
 				// driver.manage().timeouts().implicitlyWait(10,
 				// TimeUnit.SECONDS);
-				driver.manage().timeouts()
-						.pageLoadTimeout(10, TimeUnit.SECONDS);
-				driver.manage().timeouts()
-						.setScriptTimeout(10, TimeUnit.SECONDS);
+				driver.manage().timeouts().pageLoadTimeout(10,
+						TimeUnit.SECONDS);
+				driver.manage().timeouts().setScriptTimeout(10,
+						TimeUnit.SECONDS);
+
+				try {
+					Thread.sleep(2000);
+				} catch (InterruptedException e3) {
+
+				}
+
+				((JavascriptExecutor) driver).executeScript("window.focus();");
+
+				// String mainWindow = driver.getWindowHandle();
+
+				// driver.switchTo().window(mainWindow);
+
+				// driver.manage().window().maximize();
 
 				try {
 					// driver.manage().deleteAllCookies();
 
 					// Go to the CDBaby artist login page
 					driver.get(this.startpage);
+
+					try {
+						Thread.sleep(5000);
+					} catch (InterruptedException e3) {
+
+					}
 
 					WebElement query;
 
@@ -261,7 +284,8 @@ public class CDBabySalesDataCrawler extends Thread {
 						e3.printStackTrace();
 					}
 
-					driver.get("https://members.cdbaby.com/Accounting/AccountOverview.aspx");
+					driver.get(
+							"https://members.cdbaby.com/Accounting/AccountOverview.aspx");
 
 					String overviewsrc = driver.getPageSource();
 					try {
@@ -278,10 +302,14 @@ public class CDBabySalesDataCrawler extends Thread {
 					}
 
 					List<String> urls = new ArrayList<String>();
-					urls.add("https://members.cdbaby.com/Accounting/DigitalArtistOverview.aspx");
-					urls.add("https://members.cdbaby.com/Accounting/SyncArtistOverview.aspx");
-					urls.add("https://members.cdbaby.com/Accounting/TotalCDBSales-Physical.aspx");
-					urls.add("https://members.cdbaby.com/Accounting/TotalCDBSales-Digital.aspx");
+					urls.add(
+							"https://members.cdbaby.com/Accounting/DigitalArtistOverview.aspx");
+					urls.add(
+							"https://members.cdbaby.com/Accounting/SyncArtistOverview.aspx");
+					urls.add(
+							"https://members.cdbaby.com/Accounting/TotalCDBSales-Physical.aspx");
+					urls.add(
+							"https://members.cdbaby.com/Accounting/TotalCDBSales-Digital.aspx");
 					Set<String> seen = new LinkedHashSet<String>();
 					for (String url : urls) {
 						seen.addAll(this.scrapeDataPages(driver, url));
@@ -327,7 +355,8 @@ public class CDBabySalesDataCrawler extends Thread {
 
 							elements = doc.select("table.data-table tbody tr");
 							for (Element rowel : elements) {
-								if (rowel.text().matches("(?is).*PAGE TOTAL.*")) {
+								if (rowel.text()
+										.matches("(?is).*PAGE TOTAL.*")) {
 									continue;
 								}
 								Row row = new Row();
@@ -337,8 +366,8 @@ public class CDBabySalesDataCrawler extends Thread {
 										revenueType.toUpperCase());
 
 								// Default partner value
-								row.put("USER", this.getUsername()
-										.toUpperCase());
+								row.put("USER",
+										this.getUsername().toUpperCase());
 
 								// Default partner value
 								row.put("PARTNER", "CDBaby");
@@ -353,10 +382,10 @@ public class CDBabySalesDataCrawler extends Thread {
 										String val = el.text().trim();
 
 										if (hdr.toLowerCase().matches("sales")
-												|| hdr.toLowerCase().matches(
-														"date")
-												|| hdr.toLowerCase().matches(
-														"report")) {
+												|| hdr.toLowerCase()
+														.matches("date")
+												|| hdr.toLowerCase()
+														.matches("report")) {
 											val = val.replace("Jan ", "1/");
 											val = val.replace("Feb ", "2/");
 											val = val.replace("Mar ", "3/");
@@ -389,16 +418,16 @@ public class CDBabySalesDataCrawler extends Thread {
 								if (row.get("SALEDATE") != null) {
 									String dstr = row.get("SALEDATE");
 
-									Matcher m = Pattern.compile(
-											"(\\d+)/(\\d+)/(\\d+)").matcher(
-											dstr);
+									Matcher m = Pattern
+											.compile("(\\d+)/(\\d+)/(\\d+)")
+											.matcher(dstr);
 									double yyyy = 0, mm = 0, dd = 0;
 									if (m.find()) {
 										yyyy = Double.parseDouble(m.group(3));
 										mm = Double.parseDouble(m.group(1));
 										dd = Double.parseDouble(m.group(2));
-										TimeStamp date = new TimeStamp(yyyy,
-												mm, dd);
+										TimeStamp date = new TimeStamp(yyyy, mm,
+												dd);
 										row.put("SALEDATE-MS1970",
 												(long) date.toMS1970() + "");
 									}
@@ -460,7 +489,7 @@ public class CDBabySalesDataCrawler extends Thread {
 
 	/**
 	 * Gets the output directory prefix
-	 * 
+	 *
 	 * @return
 	 */
 	public String getDirPrefix() {
@@ -469,7 +498,7 @@ public class CDBabySalesDataCrawler extends Thread {
 
 	/**
 	 * Gets the selenium webdriver name
-	 * 
+	 *
 	 * @return
 	 */
 	public String getDrivername() {
@@ -478,7 +507,7 @@ public class CDBabySalesDataCrawler extends Thread {
 
 	/**
 	 * Gets the ftp directory variable
-	 * 
+	 *
 	 * @return
 	 */
 	public String getFtpDirectory() {
@@ -487,7 +516,7 @@ public class CDBabySalesDataCrawler extends Thread {
 
 	/**
 	 * Gets the FTP password
-	 * 
+	 *
 	 * @return
 	 */
 	public String getFtpPassword() {
@@ -496,7 +525,7 @@ public class CDBabySalesDataCrawler extends Thread {
 
 	/**
 	 * gets the FTP port
-	 * 
+	 *
 	 * @return
 	 */
 	public String getFtpPort() {
@@ -505,7 +534,7 @@ public class CDBabySalesDataCrawler extends Thread {
 
 	/**
 	 * Gets the FTP server
-	 * 
+	 *
 	 * @return
 	 */
 	public String getFtpServer() {
@@ -514,7 +543,7 @@ public class CDBabySalesDataCrawler extends Thread {
 
 	/**
 	 * Gets the FTP username
-	 * 
+	 *
 	 * @return
 	 */
 	public String getFtpUsername() {
@@ -523,7 +552,7 @@ public class CDBabySalesDataCrawler extends Thread {
 
 	/**
 	 * Gets the output directory
-	 * 
+	 *
 	 * @return
 	 */
 	public String getOutputDirectory() {
@@ -532,7 +561,7 @@ public class CDBabySalesDataCrawler extends Thread {
 
 	/**
 	 * Gets the CDBaby password
-	 * 
+	 *
 	 * @return
 	 */
 	public String getPassword() {
@@ -541,7 +570,7 @@ public class CDBabySalesDataCrawler extends Thread {
 
 	/**
 	 * Gets the XLS Sheet title variable
-	 * 
+	 *
 	 * @return
 	 */
 	public String getSheetTitle() {
@@ -550,7 +579,7 @@ public class CDBabySalesDataCrawler extends Thread {
 
 	/**
 	 * Gets the CDBaby start page url
-	 * 
+	 *
 	 * @return
 	 */
 	public String getStartpage() {
@@ -559,7 +588,7 @@ public class CDBabySalesDataCrawler extends Thread {
 
 	/**
 	 * gets the time delay between clicks
-	 * 
+	 *
 	 * @return
 	 */
 	public int getTimedelay() {
@@ -568,7 +597,7 @@ public class CDBabySalesDataCrawler extends Thread {
 
 	/**
 	 * Gets the CDBaby username
-	 * 
+	 *
 	 * @return
 	 */
 	public String getUsername() {
@@ -576,7 +605,7 @@ public class CDBabySalesDataCrawler extends Thread {
 	}
 
 	/**
-	 * 
+	 *
 	 * @return
 	 */
 	public boolean isDoCsv() {
@@ -584,7 +613,7 @@ public class CDBabySalesDataCrawler extends Thread {
 	}
 
 	/**
-	 * 
+	 *
 	 * @return
 	 */
 	public boolean isDoFtp() {
@@ -592,7 +621,7 @@ public class CDBabySalesDataCrawler extends Thread {
 	}
 
 	/**
-	 * 
+	 *
 	 * @return
 	 */
 	public boolean isDoHtml() {
@@ -600,7 +629,7 @@ public class CDBabySalesDataCrawler extends Thread {
 	}
 
 	/**
-	 * 
+	 *
 	 * @return
 	 */
 	public boolean isDoXlsx() {
@@ -608,7 +637,7 @@ public class CDBabySalesDataCrawler extends Thread {
 	}
 
 	/**
-	 * 
+	 *
 	 * @return
 	 */
 	public boolean isDoXml() {
@@ -629,111 +658,111 @@ public class CDBabySalesDataCrawler extends Thread {
 	 * <td>[-username | -u] string</td>
 	 * <td>string = The CD Baby Account username to use</td>
 	 * </tr>
-	 * 
+	 *
 	 * <tr>
 	 * <td>required</td>
 	 * <td>[-password | -p] string</td>
 	 * <td>string = The CD Baby Account Password to use</td>
 	 * </tr>
-	 * 
+	 *
 	 * <tr>
 	 * <td>required</td>
 	 * <td>-outdir string</td>
 	 * <td>string = The output directory to place completed files</td>
 	 * </tr>
-	 * 
+	 *
 	 * <tr>
 	 * <td>optional</td>
 	 * <td>-dohtml [true|false]</td>
 	 * <td></td>
 	 * </tr>
-	 * 
+	 *
 	 * <tr>
 	 * <td>optional</td>
 	 * <td>-doxml [true|false]</td>
 	 * <td></td>
 	 * </tr>
-	 * 
+	 *
 	 * <tr>
 	 * <td>optional</td>
 	 * <td>-docsv [true|false]</td>
 	 * <td></td>
 	 * </tr>
-	 * 
+	 *
 	 * <tr>
 	 * <td>optional</td>
 	 * <td>-doxlsx [true|false]</td>
 	 * <td></td>
 	 * </tr>
-	 * 
+	 *
 	 * <tr>
 	 * <td>optional</td>
 	 * <td>-doftp [true|false]</td>
 	 * <td></td>
 	 * </tr>
-	 * 
+	 *
 	 * <tr>
 	 * <td>optional</td>
 	 * <td>-ftpusername string</td>
 	 * <td>string = The FTP username to use</td>
 	 * </tr>
-	 * 
+	 *
 	 * <tr>
 	 * <td>optional</td>
 	 * <td>-ftppassword string</td>
 	 * <td>string = The FTP password to use</td>
 	 * </tr>
-	 * 
+	 *
 	 * <tr>
 	 * <td>optional</td>
 	 * <td>-ftpserver string</td>
 	 * <td>string = The FTP server url to use</td>
 	 * </tr>
-	 * 
+	 *
 	 * <tr>
 	 * <td>optional</td>
 	 * <td>-ftpport string</td>
 	 * <td>string = The FTP port to use</td>
 	 * </tr>
-	 * 
+	 *
 	 * <tr>
 	 * <td>optional</td>
 	 * <td>-ftpdirectory string</td>
 	 * <td>string = The FTP directory to use</td>
 	 * </tr>
-	 * 
+	 *
 	 * <tr>
 	 * <td>optional</td>
 	 * <td>-driver [(firefox) | chrome | safari | ie]</td>
 	 * <td>string = The WEBDriver to use to use</td>
 	 * </tr>
-	 * 
+	 *
 	 * <tr>
 	 * <td>optional</td>
 	 * <td>-sheeetitle string</td>
 	 * <td>string = The Title of the xlsx sheet to use</td>
 	 * </tr>
-	 * 
+	 *
 	 * <tr>
 	 * <td>optional</td>
 	 * <td>-startpage string</td>
 	 * <td>string = The url of the CDBaby login page</td>
 	 * </tr>
-	 * 
+	 *
 	 * <tr>
 	 * <td>optional</td>
 	 * <td>-clickdelay string</td>
 	 * <td>string = The amount of click delay to use</td>
 	 * </tr>
-	 * 
+	 *
 	 * <tr>
 	 * <td>optional</td>
 	 * <td>-h</td>
 	 * <td>Print help information</td>
 	 * </tr>
-	 * 
+	 *
 	 * </table>
-	 * 
+	 *
 	 * @param args
 	 */
 	public void parseArgs(String[] args) {
@@ -785,20 +814,20 @@ public class CDBabySalesDataCrawler extends Thread {
 	 * Prints the help information to system.out
 	 */
 	public void printHelp() {
-		System.out
-				.print("*********************************************************************************************************************\n");
-		System.out
-				.print("*********************************************************************************************************************\n");
+		System.out.print(
+				"*********************************************************************************************************************\n");
+		System.out.print(
+				"*********************************************************************************************************************\n");
 		System.out.print("CD Baby Sales Data Crawler ("
 				+ CDBabySalesDataCrawlerUI.getVersion() + "):\n");
-		System.out
-				.print("\tWritten by: Jonathan J. Lareau - Willful Wreckords, LLC\n\twww.willfulwreckords.com\n\n");
-		System.out
-				.print("DISCLAIMER:\n\tTHIS SOFTWARE IS PROVIDED \"AS IS\" AND WITHOUT ANY EXPRESSED OR IMPLIED WARRANTIES.\n");
-		System.out
-				.print("*********************************************************************************************************************\n");
-		System.out
-				.print("*********************************************************************************************************************\n");
+		System.out.print(
+				"\tWritten by: Jonathan J. Lareau - Willful Wreckords, LLC\n\twww.willfulwreckords.com\n\n");
+		System.out.print(
+				"DISCLAIMER:\n\tTHIS SOFTWARE IS PROVIDED \"AS IS\" AND WITHOUT ANY EXPRESSED OR IMPLIED WARRANTIES.\n");
+		System.out.print(
+				"*********************************************************************************************************************\n");
+		System.out.print(
+				"*********************************************************************************************************************\n");
 		System.out.print("\n");
 
 		System.out
@@ -818,10 +847,10 @@ public class CDBabySalesDataCrawler extends Thread {
 		System.out.println("Parameters:");
 		System.out.println("\t-username <CDBaby username> : sets username");
 		System.out.println("\t-password <CDBaby password> : sets password");
-		System.out
-				.println("\t-driver [firefox | chrome | safari | ie] : sets the browser to use.  The selected browser must have a \"standard\" install on your system.");
-		System.out
-				.println("\t-outdir <local output directory> : sets local output directory");
+		System.out.println(
+				"\t-driver [firefox | chrome | safari | ie] : sets the browser to use.  The selected browser must have a \"standard\" install on your system.");
+		System.out.println(
+				"\t-outdir <local output directory> : sets local output directory");
 		System.out.println("\t-dohtml [true | false]");
 		System.out.println("\t-doxml [true | false]");
 		System.out.println("\t-doxlsx [true | false]");
@@ -833,13 +862,13 @@ public class CDBabySalesDataCrawler extends Thread {
 				.println("\t-ftpserver <FTP server URL> : sets FTP server url");
 		System.out
 				.println("\t-ftpport <FTP port number> : sets ftp port number");
-		System.out
-				.println("\t-ftpdirectory <FTP directory> : sets FTP directory");
-		System.out
-				.println("\t-startpage <url> : defaults to https://members.cdbaby.com/Login.aspx");
+		System.out.println(
+				"\t-ftpdirectory <FTP directory> : sets FTP directory");
+		System.out.println(
+				"\t-startpage <url> : defaults to https://members.cdbaby.com/Login.aspx");
 		System.out.println("\t-sheettitle <string> : sets xlxs sheet title");
-		System.out
-				.println("\t-clickdelay <integer seconds> : added delay between crawler clicks for stability");
+		System.out.println(
+				"\t-clickdelay <integer seconds> : added delay between crawler clicks for stability");
 		System.out.println("\t-h : prints this help message");
 	}
 
@@ -853,16 +882,16 @@ public class CDBabySalesDataCrawler extends Thread {
 		boolean alsoWriteToCurrentDir = false;
 		String currentDirName = null;
 		if (!this.getOutputDirectory().matches("(?si).*current.*")) {
-			currentDirName = new File(this.getOutputDirectory())
+			currentDirName = new File(this.getOutputDirectory()).getParentFile()
 					.getParentFile().getParentFile().getParentFile()
-					.getParentFile().getAbsolutePath()
-					+ File.separator + "current" + File.separator;
+					.getAbsolutePath() + File.separator + "current"
+					+ File.separator;
 			alsoWriteToCurrentDir = true;
 		}
 		Table sumTotals = null;
 		try {
-			sumTotals = completeData.sumBy("ALBUM", "PAYABLE", "QTY.").sortBy(
-					RankingOrder.DESCENDING, "PAYABLE");
+			sumTotals = completeData.sumBy("ALBUM", "PAYABLE", "QTY.")
+					.sortBy(RankingOrder.DESCENDING, "PAYABLE");
 			this.writeOutputs(this.getOutputDirectory() + "AlbumTotals",
 					sumTotals);
 			if (alsoWriteToCurrentDir) {
@@ -884,8 +913,8 @@ public class CDBabySalesDataCrawler extends Thread {
 		}
 		try {
 
-			sumTotals = completeData.sumBy("SONG", "PAYABLE", "QTY.").sortBy(
-					RankingOrder.DESCENDING, "PAYABLE");
+			sumTotals = completeData.sumBy("SONG", "PAYABLE", "QTY.")
+					.sortBy(RankingOrder.DESCENDING, "PAYABLE");
 			this.writeOutputs(this.getOutputDirectory() + "SongTotals",
 					sumTotals);
 			if (alsoWriteToCurrentDir) {
@@ -896,8 +925,8 @@ public class CDBabySalesDataCrawler extends Thread {
 		}
 		try {
 
-			sumTotals = completeData.sumBy("ARTIST", "PAYABLE", "QTY.").sortBy(
-					RankingOrder.DESCENDING, "PAYABLE");
+			sumTotals = completeData.sumBy("ARTIST", "PAYABLE", "QTY.")
+					.sortBy(RankingOrder.DESCENDING, "PAYABLE");
 			this.writeOutputs(this.getOutputDirectory() + "ArtistTotals",
 					sumTotals);
 			if (alsoWriteToCurrentDir) {
@@ -935,8 +964,8 @@ public class CDBabySalesDataCrawler extends Thread {
 						totals);
 				if (alsoWriteToCurrentDir) {
 					this.writeOutputs(currentDirName + "byPartner"
-							+ File.separator + entry.getKey(),
-							entry.getValue(), totals);
+							+ File.separator + entry.getKey(), entry.getValue(),
+							totals);
 				}
 			}
 		} catch (Exception ex) {
@@ -950,8 +979,8 @@ public class CDBabySalesDataCrawler extends Thread {
 						totals);
 				if (alsoWriteToCurrentDir) {
 					this.writeOutputs(currentDirName + "byAlbum"
-							+ File.separator + entry.getKey(),
-							entry.getValue(), totals);
+							+ File.separator + entry.getKey(), entry.getValue(),
+							totals);
 				}
 			}
 		} catch (Exception ex) {
@@ -966,8 +995,8 @@ public class CDBabySalesDataCrawler extends Thread {
 						totals);
 				if (alsoWriteToCurrentDir) {
 					this.writeOutputs(currentDirName + "byArtist"
-							+ File.separator + entry.getKey(),
-							entry.getValue(), totals);
+							+ File.separator + entry.getKey(), entry.getValue(),
+							totals);
 				}
 			}
 		} catch (Exception ex) {
@@ -981,9 +1010,8 @@ public class CDBabySalesDataCrawler extends Thread {
 						+ File.separator + entry.getKey(), entry.getValue(),
 						totals);
 				if (alsoWriteToCurrentDir) {
-					this.writeOutputs(currentDirName + "bySong"
-							+ File.separator + entry.getKey(),
-							entry.getValue(), totals);
+					this.writeOutputs(currentDirName + "bySong" + File.separator
+							+ entry.getKey(), entry.getValue(), totals);
 				}
 			}
 		} catch (Exception ex) {
@@ -1030,29 +1058,29 @@ public class CDBabySalesDataCrawler extends Thread {
 		Set<String> ret = new LinkedHashSet<String>();
 
 		boolean set500 = false;
+
 		try {
 			Set<String> visited = new LinkedHashSet<String>();
 			while (true) {
-				List<WebElement> data = driver.findElements(By
-						.cssSelector("table.data-table tr.hover-row"));
+				List<WebElement> data = driver.findElements(
+						By.cssSelector("table.data-table tr.hover-row"));
 				if (data == null || data.isEmpty()) {
 					if (!set500) {
 						try {
 							// Thread.sleep(this.timedelay);
-							WebElement select = driver.findElement(By
-									.tagName("select"));
-							List<WebElement> allOptions = select
+							List<WebElement> allOptions = driver
 									.findElements(By.tagName("option"));
 							for (WebElement option : allOptions) {
-								// System.out.println(String.format("Value is: %s",
+								// System.out.println(String.format("Value is:
+								// %s",
 								// option.getAttribute("value")));
 								if (option.getText().contains("500")) {
 									option.click();
+									set500 = true;
+									Thread.sleep(500);
+									break;
 								}
 							}
-							set500 = true;
-
-							Thread.sleep(500);
 
 						} catch (Exception ex3) {
 
@@ -1081,30 +1109,8 @@ public class CDBabySalesDataCrawler extends Thread {
 							tr.findElement(By.partialLinkText("view sales"))
 									.click();
 
-							Thread.sleep(500);
+							Thread.sleep(3000);
 
-							if (!set500) {
-								try {
-									// Thread.sleep(this.timedelay);
-									WebElement select = driver.findElement(By
-											.tagName("select"));
-									List<WebElement> allOptions = select
-											.findElements(By.tagName("option"));
-									for (WebElement option : allOptions) {
-										// System.out.println(String.format("Value is: %s",
-										// option.getAttribute("value")));
-										if (option.getText().contains("500")) {
-											option.click();
-										}
-									}
-									set500 = true;
-
-									Thread.sleep(500);
-
-								} catch (Exception ex3) {
-
-								}
-							}
 							ret.addAll(this.scrapeRows(driver));
 
 							driver.get(url);
@@ -1123,6 +1129,22 @@ public class CDBabySalesDataCrawler extends Thread {
 
 	private Collection<String> scrapeRows(WebDriver driver) {
 		Set<String> list = new LinkedHashSet<String>();
+
+		try {
+			List<WebElement> allOptions = driver
+					.findElements(By.tagName("option"));
+			for (WebElement option : allOptions) {
+				boolean is500 = option.getText().contains("500");
+				boolean isSelected = option.isSelected();
+				if (is500 && !isSelected) {
+					option.click();
+					Thread.sleep(5000);
+					break;
+				}
+			}
+		} catch (Exception ex3) {
+
+		}
 
 		try {
 			Thread.sleep(1000);
@@ -1147,7 +1169,7 @@ public class CDBabySalesDataCrawler extends Thread {
 		 * new ArrayList<String>(); for (WebElement hr : hrs) {
 		 * headers.add(hr.getText()); } if (!headers.isEmpty()) {
 		 * list.add(headers); }
-		 * 
+		 *
 		 * List<WebElement> rows = driver.findElements(By
 		 * .cssSelector("table.data-table tbody tr.light-row")); for (WebElement
 		 * row : rows) { List<WebElement> cols =
@@ -1166,8 +1188,8 @@ public class CDBabySalesDataCrawler extends Thread {
 
 			Thread.sleep(1000);
 
-			((JavascriptExecutor) driver)
-					.executeScript("javascript:window.scrollTo(0, document.body.scrollHeight);");
+			((JavascriptExecutor) driver).executeScript(
+					"javascript:window.scrollTo(0, document.body.scrollHeight);");
 
 			Thread.sleep(1000);
 
@@ -1175,9 +1197,8 @@ public class CDBabySalesDataCrawler extends Thread {
 					.executeScript("javascript:window.scrollBy(0,-500)");
 			Thread.sleep(1000);
 
-			WebElement nxt = driver
-					.findElement(By
-							.cssSelector("table.pagination tbody tr td a.next-link:not(.aspNetDisabled)"));
+			WebElement nxt = driver.findElement(By.cssSelector(
+					"table.pagination tbody tr td a.next-link:not(.aspNetDisabled)"));
 
 			String js = "javascript:__doPostBack('ctl00$centerColumn$rptDDSales$ctl11$lnkPageNext','')";
 
@@ -1254,8 +1275,8 @@ public class CDBabySalesDataCrawler extends Thread {
 
 		int reply;
 		ftp.connect(this.ftpServer, Integer.parseInt(this.ftpPort));
-		System.out.println("\tConnected to " + this.ftpServer + " on "
-				+ this.ftpPort);
+		System.out.println(
+				"\tConnected to " + this.ftpServer + " on " + this.ftpPort);
 
 		// After connection attempt, you should check the reply code to
 		// verify success.
@@ -1319,7 +1340,7 @@ public class CDBabySalesDataCrawler extends Thread {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param doCsv
 	 */
 	public void setDoCsv(boolean doCsv) {
@@ -1327,7 +1348,7 @@ public class CDBabySalesDataCrawler extends Thread {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param doFtp
 	 */
 	public void setDoFtp(boolean doFtp) {
@@ -1335,7 +1356,7 @@ public class CDBabySalesDataCrawler extends Thread {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param doHtml
 	 */
 	public void setDoHtml(boolean doHtml) {
@@ -1343,7 +1364,7 @@ public class CDBabySalesDataCrawler extends Thread {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param doXlsx
 	 */
 	public void setDoXlsx(boolean doXlsx) {
@@ -1351,7 +1372,7 @@ public class CDBabySalesDataCrawler extends Thread {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param doXml
 	 */
 	public void setDoXml(boolean doXml) {
@@ -1359,7 +1380,7 @@ public class CDBabySalesDataCrawler extends Thread {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param drivername
 	 */
 	public void setDrivername(String drivername) {
@@ -1371,7 +1392,7 @@ public class CDBabySalesDataCrawler extends Thread {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param ftpDirectory
 	 */
 	public void setFtpDirectory(String ftpDirectory) {
@@ -1379,7 +1400,7 @@ public class CDBabySalesDataCrawler extends Thread {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param ftpPassword
 	 */
 	public void setFtpPassword(String ftpPassword) {
@@ -1387,7 +1408,7 @@ public class CDBabySalesDataCrawler extends Thread {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param ftpPort
 	 */
 	public void setFtpPort(String ftpPort) {
@@ -1395,7 +1416,7 @@ public class CDBabySalesDataCrawler extends Thread {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param ftpServer
 	 */
 	public void setFtpServer(String ftpServer) {
@@ -1403,7 +1424,7 @@ public class CDBabySalesDataCrawler extends Thread {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param ftpUsername
 	 */
 	public void setFtpUsername(String ftpUsername) {
@@ -1411,7 +1432,7 @@ public class CDBabySalesDataCrawler extends Thread {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param dirPrefix
 	 */
 	public void setOutputDirectory(String dirPrefix) {
@@ -1419,7 +1440,7 @@ public class CDBabySalesDataCrawler extends Thread {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param password
 	 */
 	public void setPassword(String password) {
@@ -1427,7 +1448,7 @@ public class CDBabySalesDataCrawler extends Thread {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param sheetTitle
 	 */
 	public void setSheetTitle(String sheetTitle) {
@@ -1435,7 +1456,7 @@ public class CDBabySalesDataCrawler extends Thread {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param startpage
 	 */
 	public void setStartpage(String startpage) {
@@ -1443,7 +1464,7 @@ public class CDBabySalesDataCrawler extends Thread {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param timedelay
 	 */
 	public void setTimedelay(int timedelay) {
@@ -1451,7 +1472,7 @@ public class CDBabySalesDataCrawler extends Thread {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param username
 	 */
 	public void setUsername(String username) {
@@ -1459,7 +1480,7 @@ public class CDBabySalesDataCrawler extends Thread {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param filename
 	 * @param table
 	 * @param plotArgs
