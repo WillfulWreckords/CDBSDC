@@ -32,7 +32,10 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.interactions.Actions;
+import org.seleniumhq.jetty9.util.Fields.Field;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.wwrkds.datamodels.RankingOrder;
 import com.wwrkds.datamodels.Row;
 import com.wwrkds.datamodels.Table;
@@ -85,6 +88,36 @@ public class CDBabySalesDataCrawler extends Thread {
 		}
 	}
 
+	public String toJson(){
+		String ret = "{";
+		for (java.lang.reflect.Field f : this.getClass().getDeclaredFields()){
+			try {
+				ret += "\""+f.getName()+"\":\""+ f.get(this) +"\"\n";
+			} catch (IllegalArgumentException | IllegalAccessException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		ret += "}";
+		return ret;
+	}
+	public String toString(){
+		String ret = "{";
+		for (java.lang.reflect.Field f : this.getClass().getDeclaredFields()){
+			try {
+				if (f.getName().matches("password")){
+					ret += "\""+f.getName()+"\":\"************\"\n";
+				}else{
+					ret += "\""+f.getName()+"\":\""+ f.get(this) +"\"\n";
+				}
+			} catch (IllegalArgumentException | IllegalAccessException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		ret += "}";
+		return ret;
+	}
 	private boolean doFtp = false, doXml = false, doXlsx = true, doHtml = true,
 			doCsv = true;
 	private final boolean dosql = false;
@@ -99,15 +132,13 @@ public class CDBabySalesDataCrawler extends Thread {
 	private String password = null;
 	private String sheetTitle = "CDBaby Sales Data";
 	private String startpage = "https://members.cdbaby.com/Login.aspx";
-
 	private int timedelay = 15000;
-
 	private String username = null;
 
 	/**
 	 * Default Constructor
 	 */
-	private CDBabySalesDataCrawler() {
+	public CDBabySalesDataCrawler() {
 
 	}
 
@@ -875,6 +906,10 @@ public class CDBabySalesDataCrawler extends Thread {
 	@Override
 	public void run() {
 
+		System.out.println("Running CDBaby Sales Data Crawler:");
+		System.out.println(this);
+		System.out.println("");
+		
 		Table completeData = this.getData();
 
 		System.out.println("Writing output ... ");
